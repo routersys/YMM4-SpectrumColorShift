@@ -18,13 +18,13 @@ namespace SpectrumColorShift
 
         public static Vector3 Weights(double wavelength)
         {
-            var x = 1.056 * Lobe(wavelength, 599.8, 37.9, 31.0)
-                + 0.362 * Lobe(wavelength, 442.0, 16.0, 26.7)
-                - 0.065 * Lobe(wavelength, 501.1, 20.4, 26.2);
-            var y = 0.821 * Lobe(wavelength, 568.8, 46.9, 40.5)
-                + 0.286 * Lobe(wavelength, 530.9, 16.3, 31.1);
-            var z = 1.217 * Lobe(wavelength, 437.0, 11.8, 36.0)
-                + 0.681 * Lobe(wavelength, 459.0, 26.0, 13.8);
+            var x = 0.362 * Lobe(wavelength, 442.0, 0.0624, 0.0374)
+                + 1.056 * Lobe(wavelength, 599.8, 0.0264, 0.0323)
+                - 0.065 * Lobe(wavelength, 501.1, 0.0490, 0.0382);
+            var y = 0.821 * Lobe(wavelength, 568.8, 0.0213, 0.0247)
+                + 0.286 * Lobe(wavelength, 530.9, 0.0613, 0.0322);
+            var z = 1.217 * Lobe(wavelength, 437.0, 0.0845, 0.0278)
+                + 0.681 * Lobe(wavelength, 459.0, 0.0385, 0.0725);
 
             return new Vector3(
                 (float)Math.Max(3.2404542 * x - 1.5371385 * y - 0.4985314 * z, 0.0),
@@ -65,9 +65,9 @@ namespace SpectrumColorShift
                 ? 1.0 / (wavelength * wavelength) - 1.0 / (reference * reference)
                 : reference - wavelength;
 
-        private static double Lobe(double wavelength, double center, double lowSigma, double highSigma)
+        private static double Lobe(double wavelength, double center, double lowScale, double highScale)
         {
-            var t = (wavelength - center) / (wavelength < center ? lowSigma : highSigma);
+            var t = (wavelength - center) * (wavelength < center ? lowScale : highScale);
             return Math.Exp(-0.5 * t * t);
         }
     }
