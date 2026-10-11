@@ -1,0 +1,120 @@
+{
+  "adapter": "Intel(R) Iris(R) Xe Graphics",
+  "driver": "32.0.101.7085",
+  "input": "synthetic 640x480 89838D8976198E40",
+  "canvas": "1280x720",
+  "cases": [
+    {
+      "name": "default",
+      "frames": [
+        0
+      ],
+      "hash": "F00F6880E180683A73FD3654BC03790D085C4244A58EB9FAA5B279EE0B578C1E"
+    },
+    {
+      "name": "distance-0",
+      "frames": [
+        0
+      ],
+      "hash": "0A700F76CEDDBAD7C4B6A2C19D46939C1A93940E86C6EFEF1E5A53DB48D2A020"
+    },
+    {
+      "name": "distance-24",
+      "frames": [
+        0
+      ],
+      "hash": "7E34A5290A11F0BA2E11DEED1E539C076BB0847536209B4ED5055C214B5C774C"
+    },
+    {
+      "name": "distance-minus-8",
+      "frames": [
+        0
+      ],
+      "hash": "3CCDA77FCA4F57D0E25015E7E6E233841160E4628974F73DAD682BEA024078FD"
+    },
+    {
+      "name": "distance-100-steps-64",
+      "frames": [
+        0
+      ],
+      "hash": "CA5F0DD647DC7BFED09D78804D10D277622D96B3524DCE3A779862190DE7ADE0"
+    },
+    {
+      "name": "angle-45",
+      "frames": [
+        0
+      ],
+      "hash": "DF6997055F66140E0A95C5A2B451E9C7A6D105A5EC35B6776D5DF990449E016A"
+    },
+    {
+      "name": "angle-90",
+      "frames": [
+        0
+      ],
+      "hash": "423E86D2BBEB2F771C3264A364A7AB118F30B8A0F5C861D6E9FD660D23E04A07"
+    },
+    {
+      "name": "radial-24",
+      "frames": [
+        0
+      ],
+      "hash": "7CCF53966F59CA90756EE5474015232B69DF02683002122D3FCE4725B5DA0D6D"
+    },
+    {
+      "name": "radial-center-offset",
+      "frames": [
+        0
+      ],
+      "hash": "1BA5ABD8165A300C80A0A8E6E8AAE4D36B78C06D2D06FAE86A9E25C9E4334892"
+    },
+    {
+      "name": "rotational-24",
+      "frames": [
+        0
+      ],
+      "hash": "D798DDA2FEA948BC2B30F4356BCC22B611EF6CEA3C7EBA28038784C3CF992327"
+    },
+    {
+      "name": "rotational-center-offset",
+      "frames": [
+        0
+      ],
+      "hash": "F4DBCCE1318F6C4AC1BA9C19D84D64C821032A73B7E487A239D7CD973DD8D2C1"
+    },
+    {
+      "name": "prism",
+      "frames": [
+        0
+      ],
+      "hash": "90B513374CB524BFC55ADBF2275CBC5C6B4F073EE37CB35AEA3B1E5337C74456"
+    },
+    {
+      "name": "reference-450",
+      "frames": [
+        0
+      ],
+      "hash": "0720C5AC5C092F41A32CF01DF8874ED8A4BCF63C47901EA46A16478B86DA262A"
+    },
+    {
+      "name": "reference-650",
+      "frames": [
+        0
+      ],
+      "hash": "3352FE0DFA10B3F70F4608BE794EDB45BF2D057DE9B8C0F78A7F424737811AEB"
+    },
+    {
+      "name": "steps-8",
+      "frames": [
+        0
+      ],
+      "hash": "DDE2925976603E7E33AA22A808F289134CE7FC8107693FBF1A8CF7DF58AF25C5"
+    },
+    {
+      "name": "strength-50",
+      "frames": [
+        0
+      ],
+      "hash": "A1EAFD98C806B09F3E180FDC748623FB8C3F537E7C63B79F2D0720FD7ABD7884"
+    }
+  ]
+}
