@@ -61,6 +61,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Resource Include="$(ShaderDirPath)SpectrumColorShift.cso" Link="Resources\Shader\SpectrumColorShift.cso" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<Compile Include="..\YMM4-GitHubUpdateNotifier\GitHubUpdateNotifier\*.cs" LinkBase="GitHubUpdateNotifier" />
 	</ItemGroup>
 
