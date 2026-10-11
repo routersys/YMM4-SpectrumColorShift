@@ -50,7 +50,7 @@ namespace SpectrumColorShift
                 get => _cb.Distance;
                 set
                 {
-                    _cb.Distance = float.IsFinite(value) ? Math.Clamp(value, -MaxInputPixel, MaxInputPixel) : 0f;
+                    _cb.Distance = Sanitize(value, -MaxInputPixel, MaxInputPixel);
                     UpdateConstants();
                 }
             }
@@ -85,7 +85,7 @@ namespace SpectrumColorShift
                 get => _centerOffset.X;
                 set
                 {
-                    _centerOffset.X = float.IsFinite(value) ? Math.Clamp(value, -MaxInputPixel, MaxInputPixel) : 0f;
+                    _centerOffset.X = Sanitize(value, -MaxInputPixel, MaxInputPixel);
                     RefreshGeometry();
                     UpdateConstants();
                 }
@@ -97,7 +97,7 @@ namespace SpectrumColorShift
                 get => _centerOffset.Y;
                 set
                 {
-                    _centerOffset.Y = float.IsFinite(value) ? Math.Clamp(value, -MaxInputPixel, MaxInputPixel) : 0f;
+                    _centerOffset.Y = Sanitize(value, -MaxInputPixel, MaxInputPixel);
                     RefreshGeometry();
                     UpdateConstants();
                 }
@@ -109,7 +109,7 @@ namespace SpectrumColorShift
                 get => _cb.Strength;
                 set
                 {
-                    _cb.Strength = float.IsFinite(value) ? Math.Clamp(value, 0f, 1f) : 0f;
+                    _cb.Strength = Sanitize(value, 0f, 1f);
                     UpdateConstants();
                 }
             }
@@ -220,6 +220,9 @@ namespace SpectrumColorShift
 
             public override RawRect MapInvalidRect(int inputIndex, RawRect invalidInputRect)
                 => ShiftGeometry.Output(invalidInputRect, _mode, _cb.Distance, _cb.Direction, _cb.Center, _cb.Radius);
+
+            private static float Sanitize(float value, float minimum, float maximum)
+                => float.IsNaN(value) ? 0f : Math.Clamp(value, minimum, maximum);
 
             private void RefreshGeometry()
             {
