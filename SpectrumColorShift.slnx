@@ -1,4 +1,11 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".gitattributes" />
+    <File Path=".gitignore" />
+    <File Path=".gitmodules" />
+    <File Path="LICENSE.txt" />
+    <File Path="README.md" />
+  </Folder>
   <Project Path="SpectrumColorShift/SpectrumColorShift.csproj">
     <BuildDependency Project="SpectrumColorShift.Shader/SpectrumColorShift.Shader.vcxproj" />
   </Project>
