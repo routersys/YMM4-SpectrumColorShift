@@ -115,6 +115,17 @@ public sealed class ShiftGeometryTests
         Assert.Equal(new RawRect(-12, -2, 72, 42), output);
     }
 
+    [Theory]
+    [InlineData(-31f, 10f, 50f, -13, -12, 113, 32)]
+    [InlineData(80f, 10f, 50f, -82, -12, 56, 32)]
+    [InlineData(-31f, 10f, 25f, -9, -6, 66, 26)]
+    public void ARadialShiftAboutACenterOutsideTheBoundsZoomsTowardsAndAwayFromIt(float centerX, float centerY, float distance, int left, int top, int right, int bottom)
+    {
+        var output = ShiftGeometry.Output(new RawRect(0, 0, 40, 20), ShiftMode.Radial, distance, Horizontal, new Vector2(centerX, centerY), 100f);
+
+        Assert.Equal(new RawRect(left, top, right, bottom), output);
+    }
+
     [Fact]
     public void ARadialShiftOfAMatchingRadiusZoomsTheBoundsOfARealImage()
     {
@@ -181,6 +192,14 @@ public sealed class ShiftGeometryTests
         var input = ShiftGeometry.Input(new RawRect(0, 0, 40, 20), ShiftMode.Radial, 50f, Horizontal, new Vector2(10f, 0f), 100f);
 
         Assert.Equal(new RawRect(-17, -12, 57, 32), input);
+    }
+
+    [Fact]
+    public void TheRadialInputGrowsEachAxisByTheTravelFromACenterOffOnBothAxes()
+    {
+        var input = ShiftGeometry.Input(new RawRect(0, 0, 40, 20), ShiftMode.Radial, 50f, Horizontal, new Vector2(10f, 15f), 100f);
+
+        Assert.Equal(new RawRect(-17, -10, 57, 30), input);
     }
 
     [Theory]
