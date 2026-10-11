@@ -46,7 +46,7 @@ float4 SampleCovered(float2 uv, float2 pixelStep, float2 scenePosition, float2 t
     float2 maximum = inputBounds.zw - 0.5;
     float2 clamped = clamp(target, minimum, maximum);
     float4 color = SourceTexture.SampleLevel(SourceSampler, uv + (clamped - scenePosition) * pixelStep, 0);
-    float2 coverage = saturate(min(target - inputBounds.xy, inputBounds.zw - target) + 1.0);
+    float2 coverage = saturate(min(target - inputBounds.xy, inputBounds.zw - target) + 0.5);
     return color * (coverage.x * coverage.y);
 }
 
