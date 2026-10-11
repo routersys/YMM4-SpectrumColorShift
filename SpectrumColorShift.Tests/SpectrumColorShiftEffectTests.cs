@@ -107,6 +107,18 @@ public sealed class SpectrumColorShiftEffectTests
     }
 
     [Fact]
+    public void TheAnimatablesAreCreatedOnlyOnce()
+    {
+        var effect = new SpectrumColorShiftEffect();
+        var method = typeof(SpectrumColorShiftEffect).GetMethod("GetAnimatables", BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+        var first = method.Invoke(effect, null);
+        var second = method.Invoke(effect, null);
+
+        Assert.Same(first, second);
+    }
+
+    [Fact]
     public void TheLabelIsTheLocalizedEffectName()
     {
         var effect = new SpectrumColorShiftEffect();
