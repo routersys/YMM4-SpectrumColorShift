@@ -8,6 +8,8 @@ namespace SpectrumColorShift
         public const float MaxRadialShift = 0.5f;
         public const int Guard = 2;
 
+        private const double RoundingTolerance = 1e-3;
+
         public static Vector2 Center(RawRect rect, Vector2 offset)
             => new((rect.Left + rect.Right) * 0.5f + offset.X, (rect.Top + rect.Bottom) * 0.5f + offset.Y);
 
@@ -106,7 +108,7 @@ namespace SpectrumColorShift
             return MathF.Sqrt(dx * dx + dy * dy);
         }
 
-        private static int Margin(float distance) => Saturate((long)Math.Ceiling(distance) + Guard);
+        private static int Margin(float distance) => Saturate((long)Math.Ceiling(distance - RoundingTolerance) + Guard);
 
         private static RawRect Inflate(RawRect rect, int marginX, int marginY)
             => new(

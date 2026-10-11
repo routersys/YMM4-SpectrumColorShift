@@ -67,6 +67,8 @@ public sealed class ShiftGeometryTests
     [InlineData(10f, 0f, 1f, -2, -12, 42, 36)]
     [InlineData(10f, 0.5f, 0.25f, -7, -5, 47, 29)]
     [InlineData(0.25f, 1f, 0f, -3, -2, 43, 26)]
+    [InlineData(10.0005f, 1f, 0f, -12, -2, 52, 26)]
+    [InlineData(10.002f, 1f, 0f, -13, -2, 53, 26)]
     public void ALinearShiftGrowsTheBoundsByTheRoundedUpComponentsPlusTwoPixels(float distance, float x, float y, int left, int top, int right, int bottom)
     {
         var rect = new RawRect(0, 0, 40, 24);
@@ -76,6 +78,19 @@ public sealed class ShiftGeometryTests
 
         Assert.Equal(new RawRect(left, top, right, bottom), output);
         Assert.Equal(output, input);
+    }
+
+    [Theory]
+    [InlineData(90f, -2, -12, 42, 36)]
+    [InlineData(-90f, -2, -12, 42, 36)]
+    [InlineData(180f, -12, -2, 52, 26)]
+    [InlineData(270f, -2, -12, 42, 36)]
+    [InlineData(0f, -12, -2, 52, 26)]
+    public void AnAxisAlignedAngleAddsNoPixelFromRoundingNoise(float degrees, int left, int top, int right, int bottom)
+    {
+        var output = ShiftGeometry.Output(new RawRect(0, 0, 40, 24), ShiftMode.Linear, 10f, Unit(degrees), Vector2.Zero, 1f);
+
+        Assert.Equal(new RawRect(left, top, right, bottom), output);
     }
 
     [Theory]
