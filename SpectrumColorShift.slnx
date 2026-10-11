@@ -10,6 +10,7 @@
     <BuildDependency Project="SpectrumColorShift.Shader/SpectrumColorShift.Shader.vcxproj" />
   </Project>
   <Project Path="SpectrumColorShift.Tests/SpectrumColorShift.Tests.csproj" />
+  <Project Path="SpectrumColorShift.Harness/SpectrumColorShift.Harness.csproj" />
   <Project Path="SpectrumColorShift.Shader/SpectrumColorShift.Shader.vcxproj">
     <BuildType Solution="*|*" Project="Release" />
     <Platform Solution="*|*" Project="Win32" />
