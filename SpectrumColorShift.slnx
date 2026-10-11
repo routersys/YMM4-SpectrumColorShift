@@ -1,0 +1,9 @@
+<Solution>
+  <Project Path="SpectrumColorShift/SpectrumColorShift.csproj">
+    <BuildDependency Project="SpectrumColorShift.Shader/SpectrumColorShift.Shader.vcxproj" />
+  </Project>
+  <Project Path="SpectrumColorShift.Shader/SpectrumColorShift.Shader.vcxproj">
+    <BuildType Solution="*|*" Project="Release" />
+    <Platform Solution="*|*" Project="Win32" />
+  </Project>
+</Solution>
