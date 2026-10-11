@@ -16,7 +16,7 @@ namespace SpectrumColorShift
         public static float ClampReference(float wavelength)
             => float.IsNaN(wavelength) ? DefaultReferenceWavelength : Math.Clamp(wavelength, ShortestWavelength, LongestWavelength);
 
-        public static Vector3 Weights(double wavelength)
+        public static (double X, double Y, double Z) ColorMatching(double wavelength)
         {
             var x = 0.362 * Lobe(wavelength, 442.0, 0.0624, 0.0374)
                 + 1.056 * Lobe(wavelength, 599.8, 0.0264, 0.0323)
@@ -25,6 +25,13 @@ namespace SpectrumColorShift
                 + 0.286 * Lobe(wavelength, 530.9, 0.0613, 0.0322);
             var z = 1.217 * Lobe(wavelength, 437.0, 0.0845, 0.0278)
                 + 0.681 * Lobe(wavelength, 459.0, 0.0385, 0.0725);
+
+            return (x, y, z);
+        }
+
+        public static Vector3 Weights(double wavelength)
+        {
+            var (x, y, z) = ColorMatching(wavelength);
 
             return new Vector3(
                 (float)Math.Max(3.2404542 * x - 1.5371385 * y - 0.4985314 * z, 0.0),
