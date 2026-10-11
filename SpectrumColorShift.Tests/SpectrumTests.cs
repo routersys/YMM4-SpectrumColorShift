@@ -1,0 +1,236 @@
+using System.Numerics;
+
+namespace SpectrumColorShift.Tests;
+
+public sealed class SpectrumTests
+{
+    static Vector4[] Table(int steps, float reference, DispersionLaw law)
+    {
+        var table = new Vector4[Spectrum.MaxSteps];
+        Spectrum.Fill(table, steps, reference, law);
+        return table;
+    }
+
+    static double Wavelength(int index, int steps) => 400d + 300d * index / (steps - 1);
+
+    static double Centroid(Vector4[] table, int steps, Func<Vector4, float> channel)
+        => Enumerable.Range(0, steps).Sum(index => Wavelength(index, steps) * channel(table[index])) / Enumerable.Range(0, steps).Sum(index => channel(table[index]));
+
+    static double Offset(DispersionLaw law, double wavelength, double reference)
+        => law == DispersionLaw.Prism ? 1d / (wavelength * wavelength) - 1d / (reference * reference) : reference - wavelength;
+
+    public static readonly TheoryData<double, float, float, float> CieWeights = new()
+    {
+        { 450d, 0.14758f, 0f, 1.88447f },
+        { 500d, 0f, 0.61251f, 0.22194f },
+        { 550d, 0f, 1.44677f, 0f },
+        { 600d, 2.47168f, 0.15424f, 0f },
+        { 650d, 0.75419f, 0f, 0f },
+    };
+
+    [Theory]
+    [MemberData(nameof(CieWeights))]
+    public void TheWeightsFollowTheCieColorMatchingFunctions(double wavelength, float red, float green, float blue)
+    {
+        var weights = Spectrum.Weights(wavelength);
+
+        Assert.InRange(weights.X, red - 0.06f, red + 0.06f);
+        Assert.InRange(weights.Y, green - 0.06f, green + 0.06f);
+        Assert.InRange(weights.Z, blue - 0.06f, blue + 0.06f);
+    }
+
+    [Fact]
+    public void TheWeightsAreNeverNegative()
+    {
+        for (var wavelength = 380d; wavelength <= 780d; wavelength += 0.5d)
+        {
+            var weights = Spectrum.Weights(wavelength);
+
+            Assert.True(weights.X >= 0f && weights.Y >= 0f && weights.Z >= 0f, $"{wavelength} nm");
+        }
+    }
+
+    [Theory]
+    [InlineData(0, 600d, 612d)]
+    [InlineData(1, 534d, 544d)]
+    [InlineData(2, 440d, 452d)]
+    public void EachChannelPeaksInItsOwnPartOfTheSpectrum(int channel, double from, double to)
+    {
+        var peak = Enumerable.Range(400, 301)
+            .Select(wavelength => (Wavelength: wavelength, Weights: Spectrum.Weights(wavelength)))
+            .MaxBy(item => channel switch { 0 => item.Weights.X, 1 => item.Weights.Y, _ => item.Weights.Z });
+
+        Assert.InRange(peak.Wavelength, from, to);
+    }
+
+    [Theory]
+    [InlineData(500d, 0)]
+    [InlineData(530d, 0)]
+    [InlineData(440d, 1)]
+    [InlineData(650d, 1)]
+    [InlineData(560d, 2)]
+    [InlineData(690d, 2)]
+    public void AChannelHasNoWeightWhereItsPrimaryIsOutOfGamut(double wavelength, int channel)
+    {
+        var weights = Spectrum.Weights(wavelength);
+
+        Assert.Equal(0f, channel switch { 0 => weights.X, 1 => weights.Y, _ => weights.Z });
+    }
+
+    [Theory]
+    [InlineData(8, 550f, DispersionLaw.Grating)]
+    [InlineData(32, 550f, DispersionLaw.Grating)]
+    [InlineData(64, 550f, DispersionLaw.Grating)]
+    [InlineData(13, 400f, DispersionLaw.Prism)]
+    [InlineData(40, 700f, DispersionLaw.Prism)]
+    [InlineData(25, 620f, DispersionLaw.Prism)]
+    public void EachChannelOfTheTableSumsToOne(int steps, float reference, DispersionLaw law)
+    {
+        var table = Table(steps, reference, law);
+
+        var sums = table.Take(steps).Aggregate(Vector3.Zero, (sum, entry) => sum + new Vector3(entry.X, entry.Y, entry.Z));
+
+        Assert.InRange(sums.X, 0.99999f, 1.00001f);
+        Assert.InRange(sums.Y, 0.99999f, 1.00001f);
+        Assert.InRange(sums.Z, 0.99999f, 1.00001f);
+    }
+
+    [Fact]
+    public void EveryStepCountFromEightToSixtyFourSumsToOne()
+    {
+        for (var steps = Spectrum.MinSteps; steps <= Spectrum.MaxSteps; steps++)
+        {
+            var table = Table(steps, 550f, DispersionLaw.Grating);
+            var sums = table.Take(steps).Aggregate(Vector3.Zero, (sum, entry) => sum + new Vector3(entry.X, entry.Y, entry.Z));
+
+            Assert.True(Math.Abs(sums.X - 1f) < 1e-5f && Math.Abs(sums.Y - 1f) < 1e-5f && Math.Abs(sums.Z - 1f) < 1e-5f, $"{steps} steps");
+        }
+    }
+
+    [Theory]
+    [InlineData(8)]
+    [InlineData(20)]
+    [InlineData(63)]
+    public void EntriesBeyondTheStepsAreCleared(int steps)
+    {
+        var table = Enumerable.Repeat(new Vector4(9f), Spectrum.MaxSteps).ToArray();
+
+        Spectrum.Fill(table, steps, 550f, DispersionLaw.Grating);
+
+        Assert.All(table.Skip(steps), entry => Assert.Equal(Vector4.Zero, entry));
+        Assert.All(table.Take(steps), entry => Assert.NotEqual(new Vector4(9f), entry));
+    }
+
+    [Theory]
+    [InlineData(DispersionLaw.Grating, 550f)]
+    [InlineData(DispersionLaw.Grating, 450f)]
+    [InlineData(DispersionLaw.Grating, 650f)]
+    [InlineData(DispersionLaw.Prism, 550f)]
+    [InlineData(DispersionLaw.Prism, 400f)]
+    [InlineData(DispersionLaw.Prism, 700f)]
+    public void TheShiftCoefficientFollowsTheDispersionLaw(DispersionLaw law, float reference)
+    {
+        const int steps = 24;
+        var table = Table(steps, reference, law);
+        var norm = Math.Max(Math.Abs(Offset(law, 400d, reference)), Math.Abs(Offset(law, 700d, reference)));
+
+        for (var index = 0; index < steps; index++)
+            Assert.Equal(Offset(law, Wavelength(index, steps), reference) / norm, table[index].W, 1e-5);
+    }
+
+    [Theory]
+    [InlineData(DispersionLaw.Grating, 550f, 1f, -1f)]
+    [InlineData(DispersionLaw.Grating, 650f, 1f, -0.2f)]
+    [InlineData(DispersionLaw.Grating, 450f, 0.2f, -1f)]
+    [InlineData(DispersionLaw.Grating, 400f, 0f, -1f)]
+    [InlineData(DispersionLaw.Grating, 700f, 1f, 0f)]
+    [InlineData(DispersionLaw.Prism, 700f, 1f, 0f)]
+    public void TheSpectrumEndsReachAtMostTheFullDistance(DispersionLaw law, float reference, float shortEnd, float longEnd)
+    {
+        var table = Table(16, reference, law);
+
+        Assert.Equal(shortEnd, table[0].W, 1e-5);
+        Assert.Equal(longEnd, table[15].W, 1e-5);
+    }
+
+    [Theory]
+    [InlineData(DispersionLaw.Grating)]
+    [InlineData(DispersionLaw.Prism)]
+    public void TheShiftCoefficientFallsAsTheWavelengthGrows(DispersionLaw law)
+    {
+        var table = Table(Spectrum.MaxSteps, 550f, law);
+
+        for (var index = 1; index < Spectrum.MaxSteps; index++)
+            Assert.True(table[index].W < table[index - 1].W, $"{index}");
+    }
+
+    [Theory]
+    [InlineData(DispersionLaw.Grating)]
+    [InlineData(DispersionLaw.Prism)]
+    public void TheSampleAtTheReferenceWavelengthDoesNotMove(DispersionLaw law)
+    {
+        var table = Table(13, 550f, law);
+
+        Assert.Equal(0f, table[6].W);
+        Assert.NotEqual(0f, table[5].W);
+        Assert.NotEqual(0f, table[7].W);
+    }
+
+    [Fact]
+    public void ThePrismLawSpreadsBlueMoreThanRed()
+    {
+        var table = Table(16, 550f, DispersionLaw.Prism);
+
+        Assert.InRange(-table[15].W, 0.40f, 0.46f);
+        Assert.True(table[0].W > -table[15].W * 2f);
+    }
+
+    [Fact]
+    public void TheTwoLawsGiveDifferentCoefficients()
+    {
+        var grating = Table(24, 550f, DispersionLaw.Grating);
+        var prism = Table(24, 550f, DispersionLaw.Prism);
+
+        Assert.NotEqual(grating[5].W, prism[5].W);
+        Assert.NotEqual(grating[18].W, prism[18].W);
+    }
+
+    [Fact]
+    public void TheWeightsOfEachChannelCentreOnItsOwnWavelength()
+    {
+        var table = Table(32, 550f, DispersionLaw.Grating);
+
+        Assert.InRange(Centroid(table, 32, entry => entry.X), 599d, 605d);
+        Assert.InRange(Centroid(table, 32, entry => entry.Y), 538d, 544d);
+        Assert.InRange(Centroid(table, 32, entry => entry.Z), 449d, 455d);
+    }
+
+    [Theory]
+    [InlineData(300f, 400f)]
+    [InlineData(400f, 400f)]
+    [InlineData(550f, 550f)]
+    [InlineData(700f, 700f)]
+    [InlineData(900f, 700f)]
+    [InlineData(float.PositiveInfinity, 700f)]
+    [InlineData(float.NegativeInfinity, 400f)]
+    [InlineData(float.NaN, 550f)]
+    public void TheReferenceStaysWithinTheSpectrum(float requested, float expected)
+    {
+        Assert.Equal(expected, Spectrum.ClampReference(requested));
+        Assert.Equal(Table(16, expected, DispersionLaw.Grating), Table(16, requested, DispersionLaw.Grating));
+    }
+
+    [Theory]
+    [InlineData(int.MinValue, 8)]
+    [InlineData(7, 8)]
+    [InlineData(8, 8)]
+    [InlineData(40, 40)]
+    [InlineData(64, 64)]
+    [InlineData(65, 64)]
+    [InlineData(int.MaxValue, 64)]
+    public void TheStepsStayWithinTheirRange(int requested, int expected)
+    {
+        Assert.Equal(expected, Spectrum.ClampSteps(requested));
+        Assert.Equal(Table(expected, 550f, DispersionLaw.Grating), Table(requested, 550f, DispersionLaw.Grating));
+    }
+}
