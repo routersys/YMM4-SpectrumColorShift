@@ -19,24 +19,28 @@ public sealed class SpectrumTests
     static double Offset(DispersionLaw law, double wavelength, double reference)
         => law == DispersionLaw.Prism ? 1d / (wavelength * wavelength) - 1d / (reference * reference) : reference - wavelength;
 
-    public static readonly TheoryData<double, float, float, float> CieWeights = new()
+    public static readonly TheoryData<double, float, float, float, float> CieWeights = new()
     {
-        { 450d, 0.14758f, 0f, 1.88447f },
-        { 500d, 0f, 0.61251f, 0.22194f },
-        { 550d, 0f, 1.44677f, 0f },
-        { 600d, 2.47168f, 0.15424f, 0f },
-        { 650d, 0.75419f, 0f, 0f },
+        { 450d, 0.14758f, 0f, 1.88447f, 0.05f },
+        { 470d, 0f, 0.03483f, 1.35363f, 0.03f },
+        { 480d, 0f, 0.20189f, 0.83643f, 0.03f },
+        { 490d, 0f, 0.37855f, 0.45114f, 0.03f },
+        { 500d, 0f, 0.61251f, 0.22194f, 0.03f },
+        { 520d, 0f, 1.27389f, 0f, 0.03f },
+        { 550d, 0f, 1.44677f, 0f, 0.03f },
+        { 600d, 2.47168f, 0.15424f, 0f, 0.04f },
+        { 650d, 0.75419f, 0f, 0f, 0.03f },
     };
 
     [Theory]
     [MemberData(nameof(CieWeights))]
-    public void TheWeightsFollowTheCieColorMatchingFunctions(double wavelength, float red, float green, float blue)
+    public void TheWeightsFollowTheCieColorMatchingFunctions(double wavelength, float red, float green, float blue, float tolerance)
     {
         var weights = Spectrum.Weights(wavelength);
 
-        Assert.InRange(weights.X, red - 0.06f, red + 0.06f);
-        Assert.InRange(weights.Y, green - 0.06f, green + 0.06f);
-        Assert.InRange(weights.Z, blue - 0.06f, blue + 0.06f);
+        Assert.InRange(weights.X, red - tolerance, red + tolerance);
+        Assert.InRange(weights.Y, green - tolerance, green + tolerance);
+        Assert.InRange(weights.Z, blue - tolerance, blue + tolerance);
     }
 
     [Fact]
