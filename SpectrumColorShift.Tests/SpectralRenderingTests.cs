@@ -106,11 +106,31 @@ public sealed class SpectralRenderingTests
                 var basis = table[step * Spectrum.EntriesPerStep + 1];
                 var position = index + 0.5 - basis.W * settings.Distance * axisDirection;
                 var value = Math.Clamp(Seam + 0.5 - position, 0d, 1d);
-                sum += (channel switch { 0 => gain.X, 1 => gain.Y, _ => gain.Z }) * (basis.X + basis.Y + basis.Z) * value * value;
+                sum += (channel switch { 0 => gain.X, 1 => gain.Y, _ => gain.Z }) * (basis.X + basis.Y + basis.Z) * value;
             }
 
-            return (byte)Math.Round(Math.Sqrt(Math.Clamp(sum, 0d, 1d)) * 255d);
+            return (byte)Math.Round(Srgb.Encode(Math.Clamp(sum, 0d, 1d)) * 255d);
         };
+    }
+
+    static Bgra Blob(int x, int y)
+    {
+        var distance = Math.Sqrt(Math.Pow(x + 0.5 - 64, 2) + Math.Pow(y + 0.5 - 64, 2));
+        var coverage = Math.Clamp((26 - distance) / 8, 0d, 1d);
+
+        return new Bgra(160, 160, 160, (byte)Math.Round(coverage * 255d));
+    }
+
+    static Vector3 TotalLight(IEnumerable<Bgra> pixels)
+    {
+        var total = Vector3.Zero;
+        foreach (var pixel in pixels)
+        {
+            var light = Srgb.DecodePremultiplied(new Vector4(pixel.Red, pixel.Green, pixel.Blue, pixel.Alpha) / 255f);
+            total += new Vector3(light.X, light.Y, light.Z);
+        }
+
+        return total;
     }
 
     static Func<int, byte> Channel(Rendering rendering, int channel, Func<int, (int X, int Y)> position)
@@ -142,6 +162,22 @@ public sealed class SpectralRenderingTests
         var rendering = Render(context, source, Settings(Mode: mode, Distance: 0f, Center: new Vector2(9f, -5f)));
 
         Assert.Equal((0, 0, source.Width, source.Height), (rendering.Left, rendering.Top, rendering.Width, rendering.Height));
+        Assert.All(rendering.Coordinates(), point => Assert.Equal(source[point.X, point.Y], rendering[point.X, point.Y]));
+    }
+
+    [Theory]
+    [InlineData(255)]
+    [InlineData(200)]
+    [InlineData(128)]
+    [InlineData(7)]
+    public void EveryGrayLevelSurvivesTheRoundTripThroughLinearLight(int alpha)
+    {
+        using var devices = new GraphicsDevices();
+        using var context = devices.CreateContext();
+        using var source = new SourceImage(context, 256, 4, (x, _) => new Bgra((byte)x, (byte)x, (byte)x, (byte)alpha));
+
+        var rendering = Render(context, source, Settings(Distance: 0f));
+
         Assert.All(rendering.Coordinates(), point => Assert.Equal(source[point.X, point.Y], rendering[point.X, point.Y]));
     }
 
@@ -274,6 +310,50 @@ public sealed class SpectralRenderingTests
         }
     }
 
+    [Theory]
+    [InlineData(10f, 0f)]
+    [InlineData(10f, 37f)]
+    [InlineData(18f, 90f)]
+    [InlineData(-14f, 200f)]
+    public void ALinearShiftLosesNoLightAndGainsOnlyWhatClippingAdds(float distance, float angle)
+    {
+        using var devices = new GraphicsDevices();
+        using var context = devices.CreateContext();
+        using var source = new SourceImage(context, 128, 128, Blob);
+
+        var rendering = Render(context, source, Settings(Distance: distance, Angle: angle));
+
+        var before = TotalLight(Enumerable.Range(0, source.Width * source.Height).Select(index => source[index % source.Width, index / source.Width]));
+        var after = TotalLight(rendering.Coordinates().Select(point => rendering[point.X, point.Y]));
+        var ratio = after / before;
+        foreach (var (channel, value) in new[] { ("red", ratio.X), ("green", ratio.Y), ("blue", ratio.Z) })
+            Assert.True(value is >= 0.995f and <= 1.08f, $"{channel} {value}");
+    }
+
+    [Theory]
+    [InlineData(8f, 0f, DispersionLaw.Grating, 32)]
+    [InlineData(8f, 180f, DispersionLaw.Prism, 33)]
+    [InlineData(16f, 0f, DispersionLaw.Grating, 64)]
+    public void TheEdgeProfileOfEachChannelFollowsTheOneDimensionalModel(float distance, float angle, DispersionLaw law, int steps)
+    {
+        using var devices = new GraphicsDevices();
+        using var context = devices.CreateContext();
+        using var source = new SourceImage(context, 64, 32, HalfAndHalf);
+        var settings = Settings(Distance: distance, Angle: angle, Dispersion: law, Steps: steps);
+        var direction = MathF.Cos(angle * MathF.PI / 180f);
+        var margin = (int)MathF.Ceiling(MathF.Abs(distance)) + 1;
+
+        var rendering = Render(context, source, settings);
+
+        for (var channel = 0; channel < 3; channel++)
+        {
+            var actual = Channel(rendering, channel, x => (x, 16));
+            var expected = ExpectedProfile(settings, channel, direction);
+            for (var x = margin; x < 64 - margin; x++)
+                Assert.True(Math.Abs(actual(x) - expected(x)) <= 2, $"channel {channel}, x {x}: {actual(x)} against {expected(x)}");
+        }
+    }
+
     [Fact]
     public void BlueMovesAheadOfGreenAndRedAlongTheDirection()
     {
@@ -286,9 +366,7 @@ public sealed class SpectralRenderingTests
         var green = Crossing(Channel(rendering, 1, x => (x, 16)), 4, 58);
         var blue = Crossing(Channel(rendering, 2, x => (x, 16)), 4, 58);
 
-        Assert.InRange(red, 27d, 30.5d);
-        Assert.InRange(green, 31.5d, 33.5d);
-        Assert.InRange(blue, 36d, 38.5d);
+        Assert.True(red is >= 28d and <= 30.5d && green is >= 32.5d and <= 34.5d && blue is >= 37d and <= 39.5d, $"red {red}, green {green}, blue {blue}");
     }
 
     [Theory]
@@ -321,7 +399,7 @@ public sealed class SpectralRenderingTests
         var gratingWidth = EdgeWidth(Channel(grating, 0, x => (x, 16)), 4, 58);
         var prismWidth = EdgeWidth(Channel(prism, 0, x => (x, 16)), 4, 58);
 
-        Assert.True(prismWidth < gratingWidth * 0.6, $"prism {prismWidth}, grating {gratingWidth}");
+        Assert.True(prismWidth < gratingWidth * 0.7, $"prism {prismWidth}, grating {gratingWidth}");
     }
 
     [Fact]

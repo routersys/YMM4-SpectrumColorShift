@@ -1,5 +1,7 @@
-Texture2D SourceTexture : register(t0);
-SamplerState SourceSampler : register(s0);
+#include "Srgb.hlsli"
+
+Texture2D LinearTexture : register(t1);
+SamplerState LinearSampler : register(s1);
 
 static const int MaxSteps = 64;
 static const int TableSize = 128;
@@ -8,7 +10,6 @@ static const int ModeRadial = 2;
 static const int ModeRotational = 4;
 static const float MaxRadialShift = 0.5;
 static const float InteriorGuard = 0.51;
-static const float MinimumAlpha = 0.0001;
 
 cbuffer Constants : register(b0)
 {
@@ -23,12 +24,6 @@ cbuffer Constants : register(b0)
     float spreadScale : packoffset(c3.y);
     float4 samples[TableSize] : packoffset(c4);
 };
-
-float4 Linearize(float4 color)
-{
-    float3 clamped = min(color.rgb, color.a);
-    return float4(clamped * clamped * rcp(max(color.a, MinimumAlpha)), color.a);
-}
 
 float2 SamplePosition(float2 scenePosition, float2 offset, float coefficient)
 {
@@ -67,23 +62,22 @@ float4 SampleCovered(float2 uv, float2 pixelStep, float2 scenePosition, float2 t
     float2 minimum = inputBounds.xy + 0.5;
     float2 maximum = inputBounds.zw - 0.5;
     float2 clamped = clamp(target, minimum, maximum);
-    float4 color = SourceTexture.SampleLevel(SourceSampler, uv + (clamped - scenePosition) * pixelStep, 0);
+    float4 color = LinearTexture.SampleLevel(LinearSampler, uv + (clamped - scenePosition) * pixelStep, 0);
     float2 coverage = saturate(min(target - inputBounds.xy, inputBounds.zw - target) + 0.5);
     return color * (coverage.x * coverage.y);
 }
 
 void Accumulate(float4 gain, float3 basis, float4 shifted, inout float3 color, inout float alpha)
 {
-    float4 lit = Linearize(shifted);
-    color += gain.rgb * dot(basis, lit.rgb);
-    alpha += gain.w * lit.a;
+    color += gain.rgb * dot(basis, shifted.rgb);
+    alpha += gain.w * shifted.a;
 }
 
 float4 Resolve(float3 color, float alpha)
 {
     float3 positive = max(color, 0.0);
     float resolved = saturate(max(alpha, max(positive.r, max(positive.g, positive.b))));
-    return float4(sqrt(min(positive, resolved) * resolved), resolved);
+    return EncodePremultiplied(float4(positive, resolved));
 }
 
 void AccumulateCovered(int index, float2 uv, float2 pixelStep, float2 scenePosition, float2 offset, inout float3 color, inout float alpha)
@@ -98,7 +92,7 @@ void AccumulateRadial(int index, float2 uv, float2 offsetStep, float rate, inout
     float4 gain = samples[index * 2];
     float4 basis = samples[index * 2 + 1];
     float scale = clamp(basis.w * rate, -MaxRadialShift, MaxRadialShift);
-    Accumulate(gain, basis.rgb, SourceTexture.SampleLevel(SourceSampler, uv - offsetStep * scale, 0), color, alpha);
+    Accumulate(gain, basis.rgb, LinearTexture.SampleLevel(LinearSampler, uv - offsetStep * scale, 0), color, alpha);
 }
 
 void AccumulateRotational(int index, float2 uv, float2 offset, float2 pixelStep, float rate, inout float3 color, inout float alpha)
@@ -109,14 +103,14 @@ void AccumulateRotational(int index, float2 uv, float2 offset, float2 pixelStep,
     float cosine;
     sincos(basis.w * rate, sine, cosine);
     float2 delta = float2((cosine - 1.0) * offset.x + sine * offset.y, (cosine - 1.0) * offset.y - sine * offset.x);
-    Accumulate(gain, basis.rgb, SourceTexture.SampleLevel(SourceSampler, uv + delta * pixelStep, 0), color, alpha);
+    Accumulate(gain, basis.rgb, LinearTexture.SampleLevel(LinearSampler, uv + delta * pixelStep, 0), color, alpha);
 }
 
 void AccumulateLinear(int index, float2 uv, float2 stride, inout float3 color, inout float alpha)
 {
     float4 gain = samples[index * 2];
     float4 basis = samples[index * 2 + 1];
-    Accumulate(gain, basis.rgb, SourceTexture.SampleLevel(SourceSampler, uv - basis.w * stride, 0), color, alpha);
+    Accumulate(gain, basis.rgb, LinearTexture.SampleLevel(LinearSampler, uv - basis.w * stride, 0), color, alpha);
 }
 
 float4 GatherCovered(float2 uv, float2 pixelStep, float2 scenePosition)
@@ -185,11 +179,12 @@ float4 GatherInside(float2 uv, float2 pixelStep, float2 scenePosition)
 float4 main(
     float4 position : SV_POSITION,
     float4 scenePosition : SCENE_POSITION,
-    float4 uv0 : TEXCOORD0
+    float4 uv0 : TEXCOORD0,
+    float4 uv1 : TEXCOORD1
 ) : SV_TARGET
 {
     if (shiftDistance == 0.0 || strength <= 0.0)
-        return SampleCovered(uv0.xy, uv0.zw, scenePosition.xy, scenePosition.xy);
+        return EncodePremultiplied(SampleCovered(uv1.xy, uv1.zw, scenePosition.xy, scenePosition.xy));
 
     float2 margin = Spread(scenePosition.xy - center) + InteriorGuard;
     bool inside = all(scenePosition.xy >= inputBounds.xy + margin) && all(scenePosition.xy <= inputBounds.zw - margin);
@@ -197,12 +192,12 @@ float4 main(
     float4 result;
     [branch]
     if (inside)
-        result = GatherInside(uv0.xy, uv0.zw, scenePosition.xy);
+        result = GatherInside(uv1.xy, uv1.zw, scenePosition.xy);
     else
-        result = GatherCovered(uv0.xy, uv0.zw, scenePosition.xy);
+        result = GatherCovered(uv1.xy, uv1.zw, scenePosition.xy);
 
     if (strength >= 1.0)
         return result;
 
-    return lerp(SampleCovered(uv0.xy, uv0.zw, scenePosition.xy, scenePosition.xy), result, strength);
+    return lerp(EncodePremultiplied(SampleCovered(uv1.xy, uv1.zw, scenePosition.xy, scenePosition.xy)), result, strength);
 }

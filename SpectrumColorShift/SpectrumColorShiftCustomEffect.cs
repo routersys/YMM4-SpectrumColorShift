@@ -1,6 +1,7 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using SharpGen.Runtime;
 using Vortice;
 using Vortice.Direct2D1;
 using YukkuriMovieMaker.Commons;
@@ -8,8 +9,40 @@ using YukkuriMovieMaker.Player.Video;
 
 namespace SpectrumColorShift;
 
-internal sealed class SpectrumColorShiftCustomEffect(IGraphicsDevicesAndContext devices) : D2D1CustomShaderEffectBase(Create<EffectImpl>(devices))
+internal sealed class SpectrumColorShiftCustomEffect : D2D1CustomShaderEffectBase
 {
+    private const int SourceInput = 0;
+    private const int LinearInput = 1;
+
+    private readonly LinearizeCustomEffect _linearized;
+
+    public SpectrumColorShiftCustomEffect(IGraphicsDevicesAndContext devices) : base(Create<EffectImpl>(devices))
+    {
+        _linearized = new LinearizeCustomEffect(devices);
+        if (!IsEnabled)
+            return;
+
+        using var linearized = _linearized.Output;
+        base.SetInput(LinearInput, linearized, true);
+    }
+
+    public new bool IsEnabled => base.IsEnabled && _linearized.IsEnabled;
+
+    public new void SetInput(int index, ID2D1Image? input, RawBool invalidate)
+    {
+        base.SetInput(index, input, invalidate);
+        if (index == SourceInput)
+            _linearized.SetInput(SourceInput, input, invalidate);
+    }
+
+    protected override void DisposeCore(nint nativePointer, bool disposing)
+    {
+        if (disposing)
+            _linearized.Dispose();
+
+        base.DisposeCore(nativePointer, disposing);
+    }
+
     internal enum PropertyIndex
     {
         Distance = 0,
@@ -35,7 +68,7 @@ internal sealed class SpectrumColorShiftCustomEffect(IGraphicsDevicesAndContext 
     public int Steps { set => SetValue((int)PropertyIndex.Steps, value); }
     public int Physical { set => SetValue((int)PropertyIndex.Physical, value); }
 
-    [CustomEffect(1)]
+    [CustomEffect(2)]
     internal sealed class EffectImpl : D2D1CustomShaderEffectImplBase<EffectImpl>
     {
         private const string PhysicalShaderName = "SpectrumColorShiftPhysical";
@@ -274,16 +307,13 @@ internal sealed class SpectrumColorShiftCustomEffect(IGraphicsDevicesAndContext 
 
         public override void MapOutputRectToInputRects(RawRect outputRect, RawRect[] inputRects)
         {
-            if (inputRects.Length == 0)
-                return;
+            var requested = inputRect.Right <= inputRect.Left || inputRect.Bottom <= inputRect.Top
+                ? inputRect
+                : ShiftGeometry.Input(outputRect, _mode, _cb.Distance, _cb.Direction, _cb.Center, _cb.Radius);
+            var used = _physical ? LinearInput : SourceInput;
 
-            if (inputRect.Right <= inputRect.Left || inputRect.Bottom <= inputRect.Top)
-            {
-                inputRects[0] = inputRect;
-                return;
-            }
-
-            inputRects[0] = ShiftGeometry.Input(outputRect, _mode, _cb.Distance, _cb.Direction, _cb.Center, _cb.Radius);
+            for (var index = 0; index < inputRects.Length; index++)
+                inputRects[index] = index == used ? requested : default;
         }
 
         public override RawRect MapInvalidRect(int inputIndex, RawRect invalidInputRect)

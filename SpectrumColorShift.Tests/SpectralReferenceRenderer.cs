@@ -28,14 +28,14 @@ internal sealed class SpectralReferenceRenderer
     public Vector4 Pixel(int x, int y)
     {
         var position = new Vector2(x + 0.5f, y + 0.5f);
-        var original = Covered(position);
+        var original = Srgb.EncodePremultiplied(Covered(position));
         if (settings.Distance == 0f || settings.Strength <= 0f)
             return original;
 
         var (color, alpha) = Accumulated(position);
         var positive = Vector3.Max(color, Vector3.Zero);
         var resolved = Math.Clamp(Math.Max(alpha, Math.Max(positive.X, Math.Max(positive.Y, positive.Z))), 0f, 1f);
-        var result = new Vector4(Vector3.SquareRoot(Vector3.Min(positive, new Vector3(resolved)) * resolved), resolved);
+        var result = Srgb.EncodePremultiplied(new Vector4(positive, resolved));
 
         return Vector4.Lerp(original, result, Math.Clamp(settings.Strength, 0f, 1f));
     }
@@ -49,7 +49,7 @@ internal sealed class SpectralReferenceRenderer
             var gain = table[index * Spectrum.EntriesPerStep];
             var basis = table[index * Spectrum.EntriesPerStep + 1];
             var target = ShiftReference.SamplePosition(settings.Mode, position, basis.W, settings.Distance, direction, center, radius);
-            var lit = Linear(target);
+            var lit = Covered(target);
             color += new Vector3(gain.X, gain.Y, gain.Z) * Vector3.Dot(new Vector3(basis.X, basis.Y, basis.Z), new Vector3(lit.X, lit.Y, lit.Z));
             alpha += gain.W * lit.W;
         }
@@ -57,25 +57,14 @@ internal sealed class SpectralReferenceRenderer
         return (color, alpha);
     }
 
-    Vector4 Linear(Vector2 target)
-    {
-        var (raw, coverage) = Sample(target);
-        if (raw.W <= 0f)
-            return Vector4.Zero;
-
-        var premultiplied = new Vector3(raw.X, raw.Y, raw.Z);
-
-        return new Vector4(premultiplied * premultiplied / raw.W, raw.W) * coverage;
-    }
-
     Vector4 Covered(Vector2 target)
     {
-        var (raw, coverage) = Sample(target);
+        var (light, coverage) = Sample(target);
 
-        return raw * coverage;
+        return light * coverage;
     }
 
-    (Vector4 Raw, float Coverage) Sample(Vector2 target)
+    (Vector4 Light, float Coverage) Sample(Vector2 target)
     {
         var size = new Vector2(source.Width, source.Height);
         var clamped = Vector2.Clamp(target, new Vector2(0.5f), size - new Vector2(0.5f));
@@ -102,6 +91,6 @@ internal sealed class SpectralReferenceRenderer
     {
         var pixel = source[Math.Clamp(x, 0, source.Width - 1), Math.Clamp(y, 0, source.Height - 1)];
 
-        return new Vector4(pixel.Red, pixel.Green, pixel.Blue, pixel.Alpha) / 255f;
+        return Srgb.DecodePremultiplied(new Vector4(pixel.Red, pixel.Green, pixel.Blue, pixel.Alpha) / 255f);
     }
 }

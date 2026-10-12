@@ -70,6 +70,30 @@ public sealed class SpectrumColorShiftEffectImplTests
     }
 
     [Fact]
+    public void TheLegacyShaderRequestsOnlyTheSourceInput()
+    {
+        var impl = new EffectImpl { Distance = 5f };
+        Map(impl, new RawRect(0, 0, 40, 24));
+        var inputs = new RawRect[2];
+
+        impl.MapOutputRectToInputRects(new RawRect(0, 0, 50, 50), inputs);
+
+        Assert.Equal([new RawRect(-7, -2, 57, 52), default], inputs);
+    }
+
+    [Fact]
+    public void ThePhysicalShaderRequestsOnlyTheLinearizedInput()
+    {
+        var impl = new EffectImpl { Distance = 5f, Physical = 1 };
+        Map(impl, new RawRect(0, 0, 40, 24));
+        var inputs = new RawRect[2];
+
+        impl.MapOutputRectToInputRects(new RawRect(0, 0, 50, 50), inputs);
+
+        Assert.Equal([default, new RawRect(-7, -2, 57, 52)], inputs);
+    }
+
+    [Fact]
     public void ANoInputRequestIsIgnored()
     {
         var impl = new EffectImpl { Distance = 5f };
@@ -103,6 +127,7 @@ public sealed class SpectrumColorShiftEffectImplTests
             Dispersion = (int)DispersionLaw.Prism,
             ReferenceWavelength = 480f,
             Steps = 16,
+            Physical = 1,
         };
 
         Assert.Equal(12f, impl.Distance);
@@ -114,5 +139,6 @@ public sealed class SpectrumColorShiftEffectImplTests
         Assert.Equal((int)DispersionLaw.Prism, impl.Dispersion);
         Assert.Equal(480f, impl.ReferenceWavelength);
         Assert.Equal(16, impl.Steps);
+        Assert.Equal(1, impl.Physical);
     }
 }
