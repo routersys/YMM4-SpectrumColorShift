@@ -283,4 +283,22 @@ public sealed class SpectrumTests
         Assert.Equal(expected, Spectrum.ClampSteps(requested));
         Assert.Equal(Table(expected, 550f, DispersionLaw.Grating), Table(requested, 550f, DispersionLaw.Grating));
     }
+
+    [Fact]
+    public void TheMatrixIsTheOneOfTheSrgbStandard()
+    {
+        Assert.Equal((3.2406255, -0.9689307, 0.0557101), Spectrum.LinearSrgb(1d, 0d, 0d));
+        Assert.Equal((-1.5372080, 1.8757561, -0.2040211), Spectrum.LinearSrgb(0d, 1d, 0d));
+        Assert.Equal((-0.4986286, 0.0415175, 1.0569959), Spectrum.LinearSrgb(0d, 0d, 1d));
+    }
+
+    [Fact]
+    public void TheD65WhiteIsLinearWhite()
+    {
+        var (red, green, blue) = Spectrum.LinearSrgb(0.9505, 1d, 1.0890);
+
+        Assert.Equal(1d, red, 1e-4);
+        Assert.Equal(1d, green, 1e-4);
+        Assert.Equal(1d, blue, 1e-4);
+    }
 }

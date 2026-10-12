@@ -29,14 +29,17 @@ internal static class Spectrum
         return (x, y, z);
     }
 
+    public static (double R, double G, double B) LinearSrgb(double x, double y, double z)
+        => (3.2406255 * x - 1.5372080 * y - 0.4986286 * z,
+            -0.9689307 * x + 1.8757561 * y + 0.0415175 * z,
+            0.0557101 * x - 0.2040211 * y + 1.0569959 * z);
+
     public static Vector3 Weights(double wavelength)
     {
         var (x, y, z) = ColorMatching(wavelength);
+        var (red, green, blue) = LinearSrgb(x, y, z);
 
-        return new Vector3(
-            (float)Math.Max(3.2404542 * x - 1.5371385 * y - 0.4985314 * z, 0.0),
-            (float)Math.Max(-0.9692660 * x + 1.8760108 * y + 0.0415560 * z, 0.0),
-            (float)Math.Max(0.0556434 * x - 0.2040259 * y + 1.0572252 * z, 0.0));
+        return new Vector3((float)Math.Max(red, 0.0), (float)Math.Max(green, 0.0), (float)Math.Max(blue, 0.0));
     }
 
     public static void Fill(Span<Vector4> table, int steps, float referenceWavelength, DispersionLaw law)
