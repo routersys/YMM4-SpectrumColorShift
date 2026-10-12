@@ -67,4 +67,21 @@ public sealed class AllocationTests
 
         Assert.Equal(0, allocated);
     }
+
+    [Theory]
+    [InlineData(DispersionLaw.Grating)]
+    [InlineData(DispersionLaw.Prism)]
+    public void FillingTheSpectralTableAllocatesNothing(DispersionLaw law)
+    {
+        var table = new Vector4[Spectrum.SpectralTableLength];
+        var step = 0;
+
+        var allocated = Allocation.Of(() =>
+        {
+            step++;
+            Spectrum.FillSpectral(table, Spectrum.MinSteps + step % (Spectrum.MaxSteps - Spectrum.MinSteps + 1), 400f + step % 300, law);
+        });
+
+        Assert.Equal(0, allocated);
+    }
 }
