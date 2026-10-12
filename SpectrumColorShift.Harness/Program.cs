@@ -265,9 +265,10 @@ static void Report(HarnessImage image, string name, string motion, HarnessRender
     => Console.WriteLine(
         $"{image.Width}x{image.Height} {name,-15} {motion,-6} " +
         $"gpu={(measurement.Gpu is { } gpu ? gpu.TotalMilliseconds.ToString("F3") : "n/a"),7} " +
+        $"gpu-med={(measurement.GpuMedian is { } median ? median.TotalMilliseconds.ToString("F3") : "n/a"),7} " +
         $"cpu={measurement.Cpu.TotalMilliseconds,7:F3} " +
         $"update={measurement.Update.TotalMilliseconds,6:F3} " +
-        $"alloc={measurement.Allocated,6} gen0={measurement.Gen0}");
+        $"alloc={measurement.Allocated,6} draw-alloc={measurement.AllocatedWithDraw,6} gen0={measurement.Gen0}");
 
 static List<GoldenCase> Evaluate(HarnessRenderer renderer, Action<GoldenCase, string[], byte[][]>? report)
 {

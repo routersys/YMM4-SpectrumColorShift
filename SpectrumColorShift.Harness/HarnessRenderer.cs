@@ -17,6 +17,8 @@ internal sealed class HarnessRenderer : IDisposable
     const int Fps = 30;
     const int Length = 300;
     const int WarmupUpdates = 2000;
+    const int WarmupMilliseconds = 1500;
+    const int GpuRounds = 4;
     const int UpdateRepeats = 20;
     const float Dpi = 96f;
 
@@ -128,6 +130,12 @@ internal sealed class HarnessRenderer : IDisposable
         {
             for (var index = 0; index < WarmupUpdates; index++)
                 processor.Update(descriptions[index % frames]);
+            for (var warmup = Stopwatch.StartNew(); warmup.ElapsedMilliseconds < WarmupMilliseconds;)
+            {
+                processor.Update(descriptions[0]);
+                Submit(output);
+                Synchronize();
+            }
             for (var frame = 0; frame < frames; frame++)
             {
                 processor.Update(descriptions[frame]);
@@ -146,17 +154,20 @@ internal sealed class HarnessRenderer : IDisposable
             }
             Synchronize();
 
-            TimeSpan? gpu = null;
-            for (var frame = 0; frame < frames; frame++)
+            var gpuTimes = new List<TimeSpan>(frames * GpuRounds);
+            for (var frame = 0; frame < frames * GpuRounds; frame++)
             {
-                processor.Update(descriptions[frame]);
+                processor.Update(descriptions[frame % frames]);
                 timer.Begin();
                 Submit(output);
                 timer.End();
-                if (timer.Resolve() is { } resolved && (gpu is null || resolved < gpu))
-                    gpu = resolved;
+                if (timer.Resolve() is { } resolved)
+                    gpuTimes.Add(resolved);
             }
             Synchronize();
+            gpuTimes.Sort();
+            TimeSpan? gpu = gpuTimes.Count > 0 ? gpuTimes[0] : null;
+            TimeSpan? gpuMedian = gpuTimes.Count > 0 ? gpuTimes[gpuTimes.Count / 2] : null;
 
             var repeats = frames * UpdateRepeats;
             var updates = Stopwatch.StartNew();
@@ -174,7 +185,15 @@ internal sealed class HarnessRenderer : IDisposable
             var allocated = (GC.GetAllocatedBytesForCurrentThread() - before) / frames;
             var gen0 = GC.CollectionCount(0) - collections;
 
-            return new Measurement(gpu, cpu, updates.Elapsed / repeats, allocated, gen0);
+            before = GC.GetAllocatedBytesForCurrentThread();
+            for (var frame = 0; frame < frames; frame++)
+            {
+                processor.Update(descriptions[frame]);
+                Submit(output);
+            }
+            var drawn = (GC.GetAllocatedBytesForCurrentThread() - before) / frames;
+
+            return new Measurement(gpu, gpuMedian, cpu, updates.Elapsed / repeats, allocated, drawn, gen0);
         }
         finally
         {
@@ -258,5 +277,5 @@ internal sealed class HarnessRenderer : IDisposable
         devices.Dispose();
     }
 
-    public readonly record struct Measurement(TimeSpan? Gpu, TimeSpan Cpu, TimeSpan Update, long Allocated, int Gen0);
+    public readonly record struct Measurement(TimeSpan? Gpu, TimeSpan? GpuMedian, TimeSpan Cpu, TimeSpan Update, long Allocated, long AllocatedWithDraw, int Gen0);
 }
