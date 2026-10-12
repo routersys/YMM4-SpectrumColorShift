@@ -15,6 +15,17 @@ internal static class ShiftGeometry
 
     public static float Radius(RawRect rect, Vector2 center) => Math.Max(Farthest(rect, center), 1f);
 
+    public static float Spread(ShiftMode mode, float distance, float radius)
+    {
+        var reach = Math.Abs(distance);
+        return mode switch
+        {
+            ShiftMode.Radial => RadialRatio(reach, radius),
+            ShiftMode.Rotational => Chord(SweepAngle(reach, radius)),
+            _ => 0f,
+        };
+    }
+
     public static RawRect Output(RawRect rect, ShiftMode mode, float distance, Vector2 direction, Vector2 center, float radius)
     {
         var reach = Math.Abs(distance);
@@ -23,8 +34,8 @@ internal static class ShiftGeometry
 
         return mode switch
         {
-            ShiftMode.Radial => Scaled(rect, center, Math.Min(reach / radius, MaxRadialShift)),
-            ShiftMode.Rotational => Swept(rect, center, Math.Min(reach / radius, MathF.PI)),
+            ShiftMode.Radial => Scaled(rect, center, RadialRatio(reach, radius)),
+            ShiftMode.Rotational => Swept(rect, center, SweepAngle(reach, radius)),
             _ => Straight(rect, reach, direction),
         };
     }
@@ -38,18 +49,24 @@ internal static class ShiftGeometry
         switch (mode)
         {
             case ShiftMode.Radial:
-                var ratio = Math.Min(reach / radius, MaxRadialShift);
+                var ratio = RadialRatio(reach, radius);
                 return Inflate(
                     output,
                     Margin(ratio * Math.Max(Math.Abs(output.Left - center.X), Math.Abs(output.Right - center.X))),
                     Margin(ratio * Math.Max(Math.Abs(output.Top - center.Y), Math.Abs(output.Bottom - center.Y))));
             case ShiftMode.Rotational:
-                var chord = 2f * MathF.Sin(Math.Min(reach / radius, MathF.PI) * 0.5f) * Farthest(output, center);
+                var chord = Chord(SweepAngle(reach, radius)) * Farthest(output, center);
                 return Inflate(output, Margin(chord), Margin(chord));
             default:
                 return Straight(output, reach, direction);
         }
     }
+
+    private static float RadialRatio(float reach, float radius) => Math.Min(reach / radius, MaxRadialShift);
+
+    private static float SweepAngle(float reach, float radius) => Math.Min(reach / radius, MathF.PI);
+
+    private static float Chord(float angle) => 2f * MathF.Sin(angle * 0.5f);
 
     private static RawRect Straight(RawRect rect, float reach, Vector2 direction)
         => Inflate(rect, Margin(reach * Math.Abs(direction.X)), Margin(reach * Math.Abs(direction.Y)));

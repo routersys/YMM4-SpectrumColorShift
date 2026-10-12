@@ -173,6 +173,7 @@ internal sealed class SpectrumColorShiftCustomEffect(IGraphicsDevicesAndContext 
                     _tableStale = false;
                 }
 
+                _cb.SpreadScale = ShiftGeometry.Spread(_mode, _cb.Distance, _cb.Radius);
                 drawInformation.SetPixelShaderConstantBuffer(_cb);
             }
             catch (Exception exception)
@@ -250,7 +251,7 @@ internal sealed class SpectrumColorShiftCustomEffect(IGraphicsDevicesAndContext 
             public float Strength;
             public int Mode;
             public int Steps;
-            public float Pad0;
+            public float SpreadScale;
             public float Pad1;
             public float Pad2;
             public SampleTable Samples;
