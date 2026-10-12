@@ -11,6 +11,7 @@ public sealed class SpectrumColorShiftEffectProcessorTests
     const int Width = 64;
     const int Height = 48;
     const int Length = 30;
+    const long HostSlack = 1024;
 
     static Bgra Textured(int x, int y)
     {
@@ -50,6 +51,72 @@ public sealed class SpectrumColorShiftEffectProcessorTests
         var draw = processor.Update(description);
 
         Assert.Same(description.DrawDescription, draw);
+    }
+
+    [Fact]
+    public void UpdatingTheProcessorWithFixedSettingsAllocatesNothing()
+    {
+        using var devices = new GraphicsDevices();
+        using var context = devices.CreateContext();
+        using var source = new SourceImage(context, Width, Height, Textured);
+        using var processor = Shifted(24d, shifted => shifted.Mode = ShiftMode.Radial).CreateVideoEffect(context);
+        processor.SetInput(source.Bitmap);
+        _ = RenderFrame(context, processor, 0);
+        var descriptions = Enumerable.Range(0, Length).Select(frame => EffectDescriptions.At(frame, Length)).ToArray();
+        var round = 0;
+
+        var allocated = Allocation.Of(() => processor.Update(descriptions[round++ % Length]));
+
+        Assert.Equal(0, allocated);
+    }
+
+    [Fact]
+    public void UpdatingTheProcessorAllocatesOnlyWhatTheHostAllocatesForTheAnimations()
+    {
+        using var devices = new GraphicsDevices();
+        using var context = devices.CreateContext();
+        using var source = new SourceImage(context, Width, Height, Textured);
+        var effect = Shifted(0d, shifted =>
+        {
+            shifted.Distance.CopyFrom(Linear(0d, 24d));
+            shifted.Angle.CopyFrom(Linear(0d, 90d));
+            shifted.CenterX.CopyFrom(Linear(0d, 20d));
+            shifted.CenterY.CopyFrom(Linear(0d, -20d));
+            shifted.Strength.CopyFrom(Linear(100d, 40d));
+            shifted.ReferenceWavelength.CopyFrom(Linear(450d, 650d));
+        });
+        using var processor = effect.CreateVideoEffect(context);
+        using var bare = new SpectrumColorShiftCustomEffect(context);
+        processor.SetInput(source.Bitmap);
+        _ = RenderFrame(context, processor, 0);
+        var descriptions = Enumerable.Range(0, Length).Select(frame => EffectDescriptions.At(frame, Length)).ToArray();
+        var reads = 0;
+        var sets = 0;
+        var updates = 0;
+
+        var reading = Allocation.Of(() =>
+        {
+            var frame = reads++ % Length;
+            _ = effect.Distance.GetValue(frame, Length, EffectDescriptions.Fps);
+            _ = effect.Angle.GetValue(frame, Length, EffectDescriptions.Fps);
+            _ = effect.CenterX.GetValue(frame, Length, EffectDescriptions.Fps);
+            _ = effect.CenterY.GetValue(frame, Length, EffectDescriptions.Fps);
+            _ = effect.Strength.GetValue(frame, Length, EffectDescriptions.Fps);
+            _ = effect.ReferenceWavelength.GetValue(frame, Length, EffectDescriptions.Fps);
+        });
+        var setting = Allocation.Of(() =>
+        {
+            var value = ++sets % 50;
+            bare.Distance = value;
+            bare.Angle = value;
+            bare.CenterX = value;
+            bare.CenterY = value;
+            bare.Strength = value / 100f;
+            bare.ReferenceWavelength = 400f + value;
+        });
+        var updating = Allocation.Of(() => processor.Update(descriptions[updates++ % Length]));
+
+        Assert.InRange(updating, reading + setting - HostSlack, reading + setting + HostSlack);
     }
 
     [Fact]
