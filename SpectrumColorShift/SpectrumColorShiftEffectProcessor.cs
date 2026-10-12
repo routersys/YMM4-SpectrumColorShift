@@ -46,7 +46,8 @@ internal sealed class SpectrumColorShiftEffectProcessor(
             (float)(_item.Strength.GetValue(frame, length, fps) / 100.0),
             (int)_item.Dispersion,
             (float)_item.ReferenceWavelength.GetValue(frame, length, fps),
-            _item.Steps);
+            _item.Steps,
+            _item.Physical);
 
         if (_isFirst || _parameters.Distance != parameters.Distance)
             _effect.Distance = parameters.Distance;
@@ -66,6 +67,8 @@ internal sealed class SpectrumColorShiftEffectProcessor(
             _effect.ReferenceWavelength = parameters.ReferenceWavelength;
         if (_isFirst || _parameters.Steps != parameters.Steps)
             _effect.Steps = parameters.Steps;
+        if (_isFirst || _parameters.Physical != parameters.Physical)
+            _effect.Physical = parameters.Physical ? 1 : 0;
 
         _parameters = parameters;
         _isFirst = false;
@@ -122,5 +125,6 @@ internal sealed class SpectrumColorShiftEffectProcessor(
         float Strength,
         int Dispersion,
         float ReferenceWavelength,
-        int Steps);
+        int Steps,
+        bool Physical);
 }

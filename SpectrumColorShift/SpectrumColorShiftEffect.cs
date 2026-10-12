@@ -78,6 +78,15 @@ public sealed class SpectrumColorShiftEffect : VideoEffectBase
     }
     private int _steps = Spectrum.DefaultSteps;
 
+    [Display(GroupName = nameof(Texts.SpectrumGroup), Name = nameof(Texts.Physical), Description = nameof(Texts.PhysicalDescription), Order = 9, ResourceType = typeof(Texts))]
+    [ToggleSlider]
+    public bool Physical
+    {
+        get => _physical;
+        set => Set(ref _physical, value);
+    }
+    private bool _physical;
+
     private IAnimatable[]? _animatables;
 
     public override IEnumerable<string> CreateExoVideoFilters(

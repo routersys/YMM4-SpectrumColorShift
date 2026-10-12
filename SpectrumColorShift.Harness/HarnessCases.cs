@@ -44,6 +44,50 @@ internal static class HarnessCases
         yield return ("reference-650", Create(effect => effect.ReferenceWavelength.Values[0].Value = 650), [0]);
         yield return ("steps-8", Create(effect => effect.Steps = 8), [0]);
         yield return ("strength-50", Create(effect => effect.Strength.Values[0].Value = 50), [0]);
+        yield return ("physical", Create(effect => effect.Physical = true), [0]);
+        yield return ("physical-distance-24", Create(effect =>
+        {
+            effect.Physical = true;
+            effect.Distance.Values[0].Value = 24;
+        }), [0]);
+        yield return ("physical-distance-100-steps-64", Create(effect =>
+        {
+            effect.Physical = true;
+            effect.Distance.Values[0].Value = 100;
+            effect.Steps = 64;
+        }), [0]);
+        yield return ("physical-radial-24", Create(effect =>
+        {
+            effect.Physical = true;
+            effect.Mode = ShiftMode.Radial;
+            effect.Distance.Values[0].Value = 24;
+        }), [0]);
+        yield return ("physical-rotational-24", Create(effect =>
+        {
+            effect.Physical = true;
+            effect.Mode = ShiftMode.Rotational;
+            effect.Distance.Values[0].Value = 24;
+        }), [0]);
+        yield return ("physical-prism", Create(effect =>
+        {
+            effect.Physical = true;
+            effect.Dispersion = DispersionLaw.Prism;
+        }), [0]);
+        yield return ("physical-reference-450", Create(effect =>
+        {
+            effect.Physical = true;
+            effect.ReferenceWavelength.Values[0].Value = 450;
+        }), [0]);
+        yield return ("physical-steps-8", Create(effect =>
+        {
+            effect.Physical = true;
+            effect.Steps = 8;
+        }), [0]);
+        yield return ("physical-strength-50", Create(effect =>
+        {
+            effect.Physical = true;
+            effect.Strength.Values[0].Value = 50;
+        }), [0]);
     }
 
     public static IEnumerable<(string Name, Func<SpectrumColorShiftEffect> Create, Action<SpectrumColorShiftEffect> Change, int Frame)> Transitions()
@@ -60,6 +104,9 @@ internal static class HarnessCases
         yield return ("reference-550-to-450", () => Create(), effect => effect.ReferenceWavelength.Values[0].Value = 450, 0);
         yield return ("steps-32-to-8", () => Create(), effect => effect.Steps = 8, 0);
         yield return ("steps-8-to-64", () => Create(effect => effect.Steps = 8), effect => effect.Steps = 64, 0);
+        yield return ("physical-off-to-on", () => Create(), effect => effect.Physical = true, 0);
+        yield return ("physical-on-to-off", () => Create(effect => effect.Physical = true), effect => effect.Physical = false, 0);
+        yield return ("physical-steps-32-to-8", () => Create(effect => effect.Physical = true), effect => effect.Steps = 8, 0);
     }
 
     public static IEnumerable<(string Name, SpectrumColorShiftEffect Effect)> Benchmarks()
@@ -73,6 +120,30 @@ internal static class HarnessCases
         }));
         yield return ("rotational-24", Create(effect =>
         {
+            effect.Mode = ShiftMode.Rotational;
+            effect.Distance.Values[0].Value = 24;
+        }));
+        yield return ("physical", Create(effect => effect.Physical = true));
+        yield return ("physical-steps-64", Create(effect =>
+        {
+            effect.Physical = true;
+            effect.Steps = 64;
+        }));
+        yield return ("physical-distance-48-steps-64", Create(effect =>
+        {
+            effect.Physical = true;
+            effect.Distance.Values[0].Value = 48;
+            effect.Steps = 64;
+        }));
+        yield return ("physical-radial-24", Create(effect =>
+        {
+            effect.Physical = true;
+            effect.Mode = ShiftMode.Radial;
+            effect.Distance.Values[0].Value = 24;
+        }));
+        yield return ("physical-rotational-24", Create(effect =>
+        {
+            effect.Physical = true;
             effect.Mode = ShiftMode.Rotational;
             effect.Distance.Values[0].Value = 24;
         }));

@@ -46,6 +46,7 @@ public sealed class AllocationTests
             impl.Dispersion = step & 1;
             impl.ReferenceWavelength = 400f + step % 300;
             impl.Steps = Spectrum.MinSteps + step % (Spectrum.MaxSteps - Spectrum.MinSteps + 1);
+            impl.Physical = step & 1;
         });
 
         Assert.Equal(0, allocated);

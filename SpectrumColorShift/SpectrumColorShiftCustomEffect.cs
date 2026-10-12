@@ -21,6 +21,7 @@ internal sealed class SpectrumColorShiftCustomEffect(IGraphicsDevicesAndContext 
         Dispersion,
         ReferenceWavelength,
         Steps,
+        Physical,
     }
 
     public float Distance { set => SetValue((int)PropertyIndex.Distance, value); }
@@ -32,17 +33,26 @@ internal sealed class SpectrumColorShiftCustomEffect(IGraphicsDevicesAndContext 
     public int Dispersion { set => SetValue((int)PropertyIndex.Dispersion, value); }
     public float ReferenceWavelength { set => SetValue((int)PropertyIndex.ReferenceWavelength, value); }
     public int Steps { set => SetValue((int)PropertyIndex.Steps, value); }
+    public int Physical { set => SetValue((int)PropertyIndex.Physical, value); }
 
     [CustomEffect(1)]
     internal sealed class EffectImpl : D2D1CustomShaderEffectImplBase<EffectImpl>
     {
+        private const string PhysicalShaderName = "SpectrumColorShiftPhysical";
+
+        private static readonly Guid PhysicalShaderId = Guid.NewGuid();
+
         private ConstantBuffer _cb;
+        private PhysicalConstantBuffer _physicalCb;
         private ShiftMode _mode = ShiftMode.Linear;
         private DispersionLaw _dispersion = DispersionLaw.Grating;
         private Vector2 _centerOffset;
         private float _referenceWavelength = Spectrum.DefaultReferenceWavelength;
         private int _steps = Spectrum.DefaultSteps;
         private bool _tableStale = true;
+        private bool _spectralStale = true;
+        private bool _physical;
+        private bool _physicalShaderApplied;
 
         [CustomEffectProperty(PropertyType.Float, (int)PropertyIndex.Distance)]
         public float Distance
@@ -122,6 +132,7 @@ internal sealed class SpectrumColorShiftCustomEffect(IGraphicsDevicesAndContext 
             {
                 _dispersion = value == (int)DispersionLaw.Prism ? DispersionLaw.Prism : DispersionLaw.Grating;
                 _tableStale = true;
+                _spectralStale = true;
                 UpdateConstants();
             }
         }
@@ -134,6 +145,7 @@ internal sealed class SpectrumColorShiftCustomEffect(IGraphicsDevicesAndContext 
             {
                 _referenceWavelength = Spectrum.ClampReference(value);
                 _tableStale = true;
+                _spectralStale = true;
                 UpdateConstants();
             }
         }
@@ -147,6 +159,18 @@ internal sealed class SpectrumColorShiftCustomEffect(IGraphicsDevicesAndContext 
                 _steps = Spectrum.ClampSteps(value);
                 _cb.Steps = _steps;
                 _tableStale = true;
+                _spectralStale = true;
+                UpdateConstants();
+            }
+        }
+
+        [CustomEffectProperty(PropertyType.Int32, (int)PropertyIndex.Physical)]
+        public int Physical
+        {
+            get => _physical ? 1 : 0;
+            set
+            {
+                _physical = value != 0;
                 UpdateConstants();
             }
         }
@@ -160,6 +184,14 @@ internal sealed class SpectrumColorShiftCustomEffect(IGraphicsDevicesAndContext 
             _cb.Steps = Spectrum.DefaultSteps;
         }
 
+        public override void Initialize(ID2D1EffectContext effectContext, ID2D1TransformGraph transformGraph)
+        {
+            base.Initialize(effectContext, transformGraph);
+
+            var bytes = PackResourceReader.ReadAllBytes(ShaderResourceUri.Get(PhysicalShaderName));
+            effectContext.LoadPixelShader(PhysicalShaderId, bytes, bytes.Length);
+        }
+
         protected override void UpdateConstants()
         {
             if (drawInformation is null)
@@ -167,20 +199,55 @@ internal sealed class SpectrumColorShiftCustomEffect(IGraphicsDevicesAndContext 
 
             try
             {
-                if (_tableStale)
+                _cb.SpreadScale = ShiftGeometry.Spread(_mode, _cb.Distance, _cb.Radius);
+
+                if (_physical != _physicalShaderApplied)
                 {
-                    Spectrum.Fill(_cb.Samples, _steps, _referenceWavelength, _dispersion);
-                    _tableStale = false;
+                    drawInformation.SetPixelShader(_physical ? PhysicalShaderId : GUID_PixelShader, PixelOptions.None);
+                    _physicalShaderApplied = _physical;
                 }
 
-                _cb.SpreadScale = ShiftGeometry.Spread(_mode, _cb.Distance, _cb.Radius);
-                drawInformation.SetPixelShaderConstantBuffer(_cb);
+                if (_physical)
+                    SendPhysicalConstants();
+                else
+                    SendConstants();
             }
             catch (Exception exception)
             {
                 SpectrumColorShiftTelemetry.Report(exception);
                 throw;
             }
+        }
+
+        private void SendConstants()
+        {
+            if (_tableStale)
+            {
+                Spectrum.Fill(_cb.Samples, _steps, _referenceWavelength, _dispersion);
+                _tableStale = false;
+            }
+
+            drawInformation!.SetPixelShaderConstantBuffer(_cb);
+        }
+
+        private void SendPhysicalConstants()
+        {
+            if (_spectralStale)
+            {
+                Spectrum.FillSpectral(_physicalCb.Samples, _steps, _referenceWavelength, _dispersion);
+                _spectralStale = false;
+            }
+
+            _physicalCb.InputBounds = _cb.InputBounds;
+            _physicalCb.Direction = _cb.Direction;
+            _physicalCb.Center = _cb.Center;
+            _physicalCb.Distance = _cb.Distance;
+            _physicalCb.Radius = _cb.Radius;
+            _physicalCb.Strength = _cb.Strength;
+            _physicalCb.Mode = _cb.Mode;
+            _physicalCb.Steps = Spectrum.Padded(_steps);
+            _physicalCb.SpreadScale = _cb.SpreadScale;
+            drawInformation!.SetPixelShaderConstantBuffer(_physicalCb);
         }
 
         public override void MapInputRectsToOutputRect(
@@ -238,6 +305,29 @@ internal sealed class SpectrumColorShiftCustomEffect(IGraphicsDevicesAndContext 
         private struct SampleTable
         {
             private Vector4 _element;
+        }
+
+        [InlineArray(Spectrum.SpectralTableLength)]
+        private struct SpectralSampleTable
+        {
+            private Vector4 _element;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct PhysicalConstantBuffer
+        {
+            public Vector4 InputBounds;
+            public Vector2 Direction;
+            public Vector2 Center;
+            public float Distance;
+            public float Radius;
+            public float Strength;
+            public int Mode;
+            public int Steps;
+            public float SpreadScale;
+            public float Pad1;
+            public float Pad2;
+            public SpectralSampleTable Samples;
         }
 
         [StructLayout(LayoutKind.Sequential)]

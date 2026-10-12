@@ -10,7 +10,8 @@ internal sealed record ShiftSettings(
     float Strength = 1f,
     DispersionLaw Dispersion = DispersionLaw.Grating,
     float ReferenceWavelength = 550f,
-    int Steps = 32)
+    int Steps = 32,
+    bool Physical = false)
 {
     public void Apply(SpectrumColorShiftCustomEffect effect)
     {
@@ -23,6 +24,7 @@ internal sealed record ShiftSettings(
         effect.Dispersion = (int)Dispersion;
         effect.ReferenceWavelength = ReferenceWavelength;
         effect.Steps = Steps;
+        effect.Physical = Physical ? 1 : 0;
     }
 }
 
