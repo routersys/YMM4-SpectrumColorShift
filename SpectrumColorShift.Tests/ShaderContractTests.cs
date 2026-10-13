@@ -2,7 +2,6 @@ using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using static SpectrumColorShift.SpectrumColorShiftCustomEffect;
 
@@ -12,14 +11,13 @@ public sealed partial class ShaderContractTests
 {
     static readonly Dictionary<string, string> Fields = new()
     {
-        ["inputBounds"] = "InputBounds",
-        ["direction"] = "Direction",
-        ["center"] = "Center",
-        ["shiftDistance"] = "Distance",
-        ["radius"] = "Radius",
-        ["strength"] = "Strength",
-        ["mode"] = "Mode",
-        ["steps"] = "Steps",
+        ["inputBounds"] = "Header.InputBounds",
+        ["direction"] = "Header.Direction",
+        ["center"] = "Header.Center",
+        ["shiftDistance"] = "Header.Distance",
+        ["radius"] = "Header.Radius",
+        ["strength"] = "Header.Strength",
+        ["steps"] = "Header.Steps",
         ["spreadScale"] = "SpreadScale",
         ["samples"] = "Samples",
     };
@@ -32,9 +30,6 @@ public sealed partial class ShaderContractTests
 
     [GeneratedRegex(@"static const (?:int|float) (?<name>\w+) = (?<value>[0-9.]+);")]
     private static partial Regex ConstantPattern();
-
-    [GeneratedRegex(@"^\s*(?:float4|float2|float|int)\s+(?<name>\w+)(?:\[\w+\])?\s*:\s*packoffset\(c(?<register>\d+)(?:\.(?<component>[xyzw]))?\);", RegexOptions.Multiline)]
-    private static partial Regex MemberPattern();
 
     static float Constant(string name)
         => float.Parse(ConstantPattern().Matches(Source).Single(match => match.Groups["name"].Value == name).Groups["value"].Value, CultureInfo.InvariantCulture);
@@ -51,21 +46,15 @@ public sealed partial class ShaderContractTests
     [Fact]
     public void TheConstantBufferMatchesTheShaderLayout()
     {
-        var members = MemberPattern().Matches(Source)
-            .ToDictionary(
-                match => match.Groups["name"].Value,
-                match => int.Parse(match.Groups["register"].Value, CultureInfo.InvariantCulture) * 16
-                    + (match.Groups["component"].Success ? "xyzw".IndexOf(match.Groups["component"].Value[0]) * 4 : 0));
+        var members = ConstantBufferContract.Declared(Source);
 
         Assert.Equal(Fields.Keys.Order(), members.Keys.Order());
-        Assert.All(members, member => Assert.Equal(member.Value, (int)Marshal.OffsetOf(ConstantBuffer, Fields[member.Key])));
+        Assert.All(members, member => Assert.Equal(member.Value, ConstantBufferContract.OffsetOf(ConstantBuffer, Fields[member.Key])));
     }
 
     [Fact]
     public void TheConstantBufferFillsWholeRegistersAndHoldsTheTable()
     {
-        var size = (int)typeof(Unsafe).GetMethod(nameof(Unsafe.SizeOf))!.MakeGenericMethod(ConstantBuffer).Invoke(null, null)!;
-
-        Assert.Equal(16 * (4 + Spectrum.MaxSteps), size);
+        Assert.Equal(16 * (4 + Spectrum.MaxSteps), ConstantBufferContract.SizeOf(ConstantBuffer));
     }
 }

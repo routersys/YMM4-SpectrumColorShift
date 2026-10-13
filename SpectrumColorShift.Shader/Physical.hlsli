@@ -24,11 +24,10 @@ cbuffer Constants : register(b0)
     float shiftDistance : packoffset(c2.x);
     float radius : packoffset(c2.y);
     float strength : packoffset(c2.z);
-    int mode : packoffset(c2.w);
-    int steps : packoffset(c3.x);
-    float spreadScale : packoffset(c3.y);
-    float filterOrigin : packoffset(c3.z);
-    int filterVertical : packoffset(c3.w);
+    int steps : packoffset(c2.w);
+    float spreadScale : packoffset(c3.x);
+    float filterOrigin : packoffset(c3.y);
+    int filterVertical : packoffset(c3.z);
     float4 samples[TableSize] : packoffset(c4);
     float4 taps[FilterTableSize] : packoffset(c132);
 };

@@ -24,9 +24,8 @@ cbuffer Constants : register(b0)
     float shiftDistance : packoffset(c2.x);
     float radius : packoffset(c2.y);
     float strength : packoffset(c2.z);
-    int mode : packoffset(c2.w);
-    int steps : packoffset(c3.x);
-    float spreadScale : packoffset(c3.y);
+    int steps : packoffset(c2.w);
+    float spreadScale : packoffset(c3.x);
     float4 samples[MaxSteps] : packoffset(c4);
 };
 
