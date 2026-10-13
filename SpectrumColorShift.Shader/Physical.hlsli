@@ -9,6 +9,7 @@ SamplerState LinearSampler : register(s1);
 
 static const int MaxSteps = 64;
 static const int TableSize = 128;
+static const int FilterTableSize = 132;
 static const int ModeRadial = 2;
 static const int ModeRotational = 4;
 static const int CompiledMode = ShaderMode;
@@ -26,7 +27,10 @@ cbuffer Constants : register(b0)
     int mode : packoffset(c2.w);
     int steps : packoffset(c3.x);
     float spreadScale : packoffset(c3.y);
+    float filterOrigin : packoffset(c3.z);
+    int filterVertical : packoffset(c3.w);
     float4 samples[TableSize] : packoffset(c4);
+    float4 taps[FilterTableSize] : packoffset(c132);
 };
 
 float2 SamplePosition(float2 scenePosition, float2 offset, float coefficient)

@@ -154,11 +154,13 @@
   <ItemGroup>
     <None Include="SpectrumColorShift.hlsl" />
     <None Include="SpectrumColorShiftPhysical.hlsl" />
+    <None Include="SpectrumColorShiftPhysicalFilter.hlsl" />
     <None Include="Physical.hlsli" />
     <None Include="Srgb.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <StepCount Include="8;12;16;20;24;28;32;36;40;44;48;52;56;60;64" />
+    <TapCount Include="4;8;12;16;20;24;28;32;36;40;44" />
   </ItemGroup>
   <Target Name="AddStepCountShaders" BeforeTargets="FxCompile">
     <ItemGroup>
@@ -191,6 +193,11 @@
         <ShaderType>Pixel</ShaderType>
         <PreprocessorDefinitions>StepCount=%(StepCount.Identity);ShaderMode=4</PreprocessorDefinitions>
         <ObjectFileOutput>$(OutDir)SpectrumColorShiftPhysicalRotational%(StepCount.Identity).cso</ObjectFileOutput>
+      </FxCompile>
+      <FxCompile Include="SpectrumColorShiftPhysicalFilter.hlsl">
+        <ShaderType>Pixel</ShaderType>
+        <PreprocessorDefinitions>TapCount=%(TapCount.Identity);ShaderMode=1</PreprocessorDefinitions>
+        <ObjectFileOutput>$(OutDir)SpectrumColorShiftPhysicalFilterLinear%(TapCount.Identity).cso</ObjectFileOutput>
       </FxCompile>
     </ItemGroup>
   </Target>

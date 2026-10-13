@@ -69,6 +69,25 @@ public sealed class AllocationTests
         Assert.Equal(0, allocated);
     }
 
+    [Fact]
+    public void RefreshingTheFilterAllocatesNothing()
+    {
+        var impl = new EffectImpl { Physical = 1 };
+        var step = 0;
+
+        var allocated = Allocation.Of(() =>
+        {
+            step++;
+            impl.Angle = step % 4 * 90f;
+            impl.Distance = step % 40 - 20;
+            impl.Steps = Spectrum.MinSteps + step % (Spectrum.MaxSteps - Spectrum.MinSteps + 1);
+            impl.Dispersion = step & 1;
+            _ = impl.FilterTaps;
+        });
+
+        Assert.Equal(0, allocated);
+    }
+
     [Theory]
     [InlineData(DispersionLaw.Grating)]
     [InlineData(DispersionLaw.Prism)]

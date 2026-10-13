@@ -21,7 +21,10 @@ public sealed partial class SpectralShaderContractTests
         ["mode"] = "Mode",
         ["steps"] = "Steps",
         ["spreadScale"] = "SpreadScale",
+        ["filterOrigin"] = "FilterOrigin",
+        ["filterVertical"] = "FilterVertical",
         ["samples"] = "Samples",
+        ["taps"] = "Taps",
     };
 
     static string Source { get; } = ShaderSource("Physical.hlsli");
@@ -58,6 +61,7 @@ public sealed partial class SpectralShaderContractTests
     {
         Assert.Equal(Spectrum.MaxSteps, Constant("MaxSteps"));
         Assert.Equal(Spectrum.SpectralTableLength, Constant("TableSize"));
+        Assert.Equal(SpectralFilter.TableLength, Constant("FilterTableSize"));
         Assert.Equal((int)ShiftMode.Radial, Constant("ModeRadial"));
         Assert.Equal((int)ShiftMode.Rotational, Constant("ModeRotational"));
         Assert.Equal(ShiftGeometry.MaxRadialShift, Constant("MaxRadialShift"));
@@ -116,6 +120,6 @@ public sealed partial class SpectralShaderContractTests
     {
         var size = (int)typeof(Unsafe).GetMethod(nameof(Unsafe.SizeOf))!.MakeGenericMethod(ConstantBuffer).Invoke(null, null)!;
 
-        Assert.Equal(16 * (4 + Spectrum.SpectralTableLength), size);
+        Assert.Equal(16 * (4 + Spectrum.SpectralTableLength + SpectralFilter.TableLength), size);
     }
 }

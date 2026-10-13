@@ -15,7 +15,10 @@ public sealed partial class StepShadersTests
     [GeneratedRegex(@"<StepCount Include=""(?<counts>[^""]+)""")]
     private static partial Regex CountsPattern();
 
-    [GeneratedRegex(@"ShaderMode=(?<value>\d+)</PreprocessorDefinitions>\s*<ObjectFileOutput>\$\(OutDir\)(?<prefix>SpectrumColorShift(?:Physical)?)(?<mode>[A-Za-z]+)%\(StepCount\.Identity\)\.cso")]
+    [GeneratedRegex(@"<TapCount Include=""(?<counts>[^""]+)""")]
+    private static partial Regex TapCountsPattern();
+
+    [GeneratedRegex(@"ShaderMode=(?<value>\d+)</PreprocessorDefinitions>\s*<ObjectFileOutput>\$\(OutDir\)(?<prefix>SpectrumColorShiftPhysicalFilter|SpectrumColorShiftPhysical|SpectrumColorShift)(?<mode>[A-Za-z]+)%\((?<list>StepCount|TapCount)\.Identity\)\.cso")]
     private static partial Regex VariantPattern();
 
     [Fact]
@@ -37,18 +40,39 @@ public sealed partial class StepShadersTests
     [Fact]
     public void TheShaderProjectCompilesEveryModeOfBothFamiliesWithItsEnumValue()
     {
-        var compiled = VariantPattern().Matches(Project).Select(match => (match.Groups["prefix"].Value, match.Groups["mode"].Value, int.Parse(match.Groups["value"].Value, CultureInfo.InvariantCulture)));
-        var expected = from prefix in new[] { "SpectrumColorShift", "SpectrumColorShiftPhysical" } from mode in StepShaders.Modes select (prefix, mode.ToString(), (int)mode);
+        var compiled = VariantPattern().Matches(Project).Select(match => (match.Groups["prefix"].Value, match.Groups["mode"].Value, int.Parse(match.Groups["value"].Value, CultureInfo.InvariantCulture), match.Groups["list"].Value));
+        var stepped = from prefix in new[] { "SpectrumColorShift", "SpectrumColorShiftPhysical" } from mode in StepShaders.Modes select (prefix, mode.ToString(), (int)mode, "StepCount");
+        var expected = stepped.Append(("SpectrumColorShiftPhysicalFilter", ShiftMode.Linear.ToString(), (int)ShiftMode.Linear, "TapCount"));
 
         Assert.Equal(expected.Order(), compiled.Order());
     }
 
     [Fact]
+    public void TheShaderProjectCompilesExactlyTheseTapCounts()
+    {
+        var compiled = TapCountsPattern().Match(Project).Groups["counts"].Value.Split(';').Select(count => int.Parse(count, CultureInfo.InvariantCulture));
+
+        Assert.Equal(SpectralFilter.Counts, compiled);
+        Assert.Equal(SpectralFilter.Counts, StepShaders.FilterCounts);
+    }
+
+    [Fact]
     public void EveryModeAndCountHasItsOwnShaderInEachFamily()
     {
-        var ids = (from physical in new[] { false, true } from mode in StepShaders.Modes from count in StepShaders.Counts select StepShaders.Select(physical, mode, count)).ToList();
+        var stepped = from physical in new[] { false, true } from mode in StepShaders.Modes from count in StepShaders.Counts select StepShaders.Select(physical, mode, count);
+        var ids = stepped.Concat(StepShaders.FilterCounts.Select(StepShaders.SelectFilter)).ToList();
 
-        Assert.Equal(2 * StepShaders.Modes.Count() * StepShaders.Counts.Count(), ids.Distinct().Count());
+        Assert.Equal(2 * StepShaders.Modes.Count() * StepShaders.Counts.Count() + StepShaders.FilterCounts.Count(), ids.Distinct().Count());
+    }
+
+    [Fact]
+    public void EveryTapCountIsShippedAsAResource()
+    {
+        foreach (var count in StepShaders.FilterCounts)
+        {
+            var name = StepShaders.FilterResourceName(count);
+            Assert.True(PackResourceReader.ReadAllBytes(ShaderResourceUri.Get(name)).Length > 0, name);
+        }
     }
 
     [Theory]

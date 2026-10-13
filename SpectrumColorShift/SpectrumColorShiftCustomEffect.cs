@@ -80,6 +80,8 @@ internal sealed class SpectrumColorShiftCustomEffect : D2D1CustomShaderEffectBas
         private int _steps = Spectrum.DefaultSteps;
         private bool _tableStale = true;
         private bool _spectralStale = true;
+        private bool _filterStale = true;
+        private SpectralFilter.Layout _filter;
         private bool _physical;
         private Guid _shader = GUID_PixelShader;
 
@@ -90,6 +92,7 @@ internal sealed class SpectrumColorShiftCustomEffect : D2D1CustomShaderEffectBas
             set
             {
                 _cb.Distance = Sanitize(value, -MaxInputPixel, MaxInputPixel);
+                _filterStale = true;
                 UpdateConstants();
             }
         }
@@ -102,6 +105,7 @@ internal sealed class SpectrumColorShiftCustomEffect : D2D1CustomShaderEffectBas
             {
                 _mode = value is (int)ShiftMode.Radial or (int)ShiftMode.Rotational ? (ShiftMode)value : ShiftMode.Linear;
                 _cb.Mode = (int)_mode;
+                _filterStale = true;
                 UpdateConstants();
             }
         }
@@ -114,6 +118,7 @@ internal sealed class SpectrumColorShiftCustomEffect : D2D1CustomShaderEffectBas
             {
                 var radians = float.IsFinite(value) ? value * MathF.PI / 180f : 0f;
                 _cb.Direction = new Vector2(MathF.Cos(radians), MathF.Sin(radians));
+                _filterStale = true;
                 UpdateConstants();
             }
         }
@@ -204,6 +209,18 @@ internal sealed class SpectrumColorShiftCustomEffect : D2D1CustomShaderEffectBas
             }
         }
 
+        internal int FilterTaps
+        {
+            get
+            {
+                if (!_physical)
+                    return 0;
+
+                RefreshPhysical();
+                return _filter.Taps;
+            }
+        }
+
         public EffectImpl() : base(StepShaders.DefaultBytes)
         {
             _cb.Direction = Vector2.UnitX;
@@ -228,7 +245,10 @@ internal sealed class SpectrumColorShiftCustomEffect : D2D1CustomShaderEffectBas
             {
                 _cb.SpreadScale = ShiftGeometry.Spread(_mode, _cb.Distance, _cb.Radius);
 
-                var shader = StepShaders.Select(_physical, _mode, _steps);
+                if (_physical)
+                    RefreshPhysical();
+
+                var shader = _physical && _filter.Taps > 0 ? StepShaders.SelectFilter(_filter.Taps) : StepShaders.Select(_physical, _mode, _steps);
                 if (shader != _shader)
                 {
                     drawInformation.SetPixelShader(shader, PixelOptions.None);
@@ -258,14 +278,24 @@ internal sealed class SpectrumColorShiftCustomEffect : D2D1CustomShaderEffectBas
             drawInformation!.SetPixelShaderConstantBuffer(_cb);
         }
 
-        private void SendPhysicalConstants()
+        private void RefreshPhysical()
         {
             if (_spectralStale)
             {
                 Spectrum.FillSpectral(_physicalCb.Samples, _steps, _referenceWavelength, _dispersion);
                 _spectralStale = false;
+                _filterStale = true;
             }
 
+            if (_filterStale)
+            {
+                _filter = _mode == ShiftMode.Linear ? SpectralFilter.Fill(_physicalCb.Taps, _physicalCb.Samples, _steps, _cb.Distance, _cb.Direction) : default;
+                _filterStale = false;
+            }
+        }
+
+        private void SendPhysicalConstants()
+        {
             _physicalCb.InputBounds = _cb.InputBounds;
             _physicalCb.Direction = _cb.Direction;
             _physicalCb.Center = _cb.Center;
@@ -275,6 +305,8 @@ internal sealed class SpectrumColorShiftCustomEffect : D2D1CustomShaderEffectBas
             _physicalCb.Mode = _cb.Mode;
             _physicalCb.Steps = Spectrum.Padded(_steps);
             _physicalCb.SpreadScale = _cb.SpreadScale;
+            _physicalCb.FilterOrigin = _filter.Origin;
+            _physicalCb.FilterVertical = _filter.Vertical ? 1 : 0;
             drawInformation!.SetPixelShaderConstantBuffer(_physicalCb);
         }
 
@@ -338,6 +370,12 @@ internal sealed class SpectrumColorShiftCustomEffect : D2D1CustomShaderEffectBas
             private Vector4 _element;
         }
 
+        [InlineArray(SpectralFilter.TableLength)]
+        private struct FilterTapTable
+        {
+            private Vector4 _element;
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         private struct PhysicalConstantBuffer
         {
@@ -350,9 +388,10 @@ internal sealed class SpectrumColorShiftCustomEffect : D2D1CustomShaderEffectBas
             public int Mode;
             public int Steps;
             public float SpreadScale;
-            public float Pad1;
-            public float Pad2;
+            public float FilterOrigin;
+            public int FilterVertical;
             public SpectralSampleTable Samples;
+            public FilterTapTable Taps;
         }
 
         [StructLayout(LayoutKind.Sequential)]

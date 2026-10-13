@@ -113,6 +113,44 @@ public sealed class SpectrumColorShiftEffectImplTests
         Assert.Equal(new RawRect(-12, -2, 52, 26), invalid);
     }
 
+    [Theory]
+    [InlineData(0f, 8f, 1, ShiftMode.Linear, true)]
+    [InlineData(90f, 8f, 1, ShiftMode.Linear, true)]
+    [InlineData(180f, -6f, 1, ShiftMode.Linear, true)]
+    [InlineData(45f, 8f, 1, ShiftMode.Linear, false)]
+    [InlineData(0f, 40f, 1, ShiftMode.Linear, false)]
+    [InlineData(0f, 0f, 1, ShiftMode.Linear, false)]
+    [InlineData(0f, 8f, 1, ShiftMode.Radial, false)]
+    [InlineData(0f, 8f, 1, ShiftMode.Rotational, false)]
+    [InlineData(0f, 8f, 0, ShiftMode.Linear, false)]
+    public void TheFilterIsUsedOnlyForAnAxisAlignedPhysicalShiftThatIsShortEnough(float angle, float distance, int physical, ShiftMode mode, bool used)
+    {
+        var impl = new EffectImpl { Mode = (int)mode, Angle = angle, Distance = distance, Physical = physical };
+
+        Assert.Equal(used, impl.FilterTaps > 0);
+    }
+
+    [Fact]
+    public void TheFilterFollowsTheSettingsThatChangeIt()
+    {
+        var impl = new EffectImpl { Physical = 1, Distance = 8f };
+        Assert.True(impl.FilterTaps > 0);
+
+        impl.Angle = 30f;
+        Assert.Equal(0, impl.FilterTaps);
+
+        impl.Angle = 0f;
+        impl.Distance = 60f;
+        Assert.Equal(0, impl.FilterTaps);
+
+        impl.Distance = 8f;
+        impl.Steps = 8;
+        Assert.Equal(0, impl.FilterTaps);
+
+        impl.Steps = 32;
+        Assert.True(impl.FilterTaps > 0);
+    }
+
     [Fact]
     public void EveryPropertyCanBeSetBeforeTheEffectIsDrawn()
     {
