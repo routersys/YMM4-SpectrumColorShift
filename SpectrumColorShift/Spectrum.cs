@@ -8,7 +8,7 @@ internal static class Spectrum
     public const int MaxSteps = 64;
     public const int DefaultSteps = 32;
     public const int EntriesPerStep = 2;
-    public const int Unroll = 4;
+    public const int StepQuantum = 4;
     public const int SpectralTableLength = MaxSteps * EntriesPerStep;
     public const float ShortestWavelength = 400f;
     public const float LongestWavelength = 700f;
@@ -16,7 +16,7 @@ internal static class Spectrum
 
     public static int ClampSteps(int steps) => Math.Clamp(steps, MinSteps, MaxSteps);
 
-    public static int Padded(int steps) => (ClampSteps(steps) + Unroll - 1) / Unroll * Unroll;
+    public static int Padded(int steps) => (ClampSteps(steps) + StepQuantum - 1) / StepQuantum * StepQuantum;
 
     public static float ClampReference(float wavelength)
         => float.IsNaN(wavelength) ? DefaultReferenceWavelength : Math.Clamp(wavelength, ShortestWavelength, LongestWavelength);

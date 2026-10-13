@@ -144,18 +144,6 @@
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <FxCompile Include="SpectrumColorShift.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
-    </FxCompile>
-    <FxCompile Include="SpectrumColorShiftPhysical.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
-    </FxCompile>
     <FxCompile Include="SpectrumColorShiftLinearize.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
@@ -164,8 +152,27 @@
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="SpectrumColorShift.hlsl" />
+    <None Include="SpectrumColorShiftPhysical.hlsl" />
     <None Include="Srgb.hlsli" />
   </ItemGroup>
+  <ItemGroup>
+    <StepCount Include="8;12;16;20;24;28;32;36;40;44;48;52;56;60;64" />
+  </ItemGroup>
+  <Target Name="AddStepCountShaders" BeforeTargets="FxCompile">
+    <ItemGroup>
+      <FxCompile Include="SpectrumColorShift.hlsl">
+        <ShaderType>Pixel</ShaderType>
+        <PreprocessorDefinitions>StepCount=%(StepCount.Identity)</PreprocessorDefinitions>
+        <ObjectFileOutput>$(OutDir)SpectrumColorShift%(StepCount.Identity).cso</ObjectFileOutput>
+      </FxCompile>
+      <FxCompile Include="SpectrumColorShiftPhysical.hlsl">
+        <ShaderType>Pixel</ShaderType>
+        <PreprocessorDefinitions>StepCount=%(StepCount.Identity)</PreprocessorDefinitions>
+        <ObjectFileOutput>$(OutDir)SpectrumColorShiftPhysical%(StepCount.Identity).cso</ObjectFileOutput>
+      </FxCompile>
+    </ItemGroup>
+  </Target>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

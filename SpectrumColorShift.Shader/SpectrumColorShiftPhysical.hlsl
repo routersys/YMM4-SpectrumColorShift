@@ -1,3 +1,7 @@
+#ifndef StepCount
+#error StepCount must be defined by the build.
+#endif
+
 #include "Srgb.hlsli"
 
 Texture2D LinearTexture : register(t1);
@@ -5,7 +9,6 @@ SamplerState LinearSampler : register(s1);
 
 static const int MaxSteps = 64;
 static const int TableSize = 128;
-static const int Unroll = 4;
 static const int ModeRadial = 2;
 static const int ModeRotational = 4;
 static const float MaxRadialShift = 0.5;
@@ -137,40 +140,25 @@ float4 GatherInside(float2 uv, float2 pixelStep, float2 scenePosition)
         float2 offsetStep = offset * pixelStep;
         float rate = shiftDistance / radius;
 
-        [loop]
-        for (int index = 0; index < steps; index += Unroll)
-        {
+        [unroll]
+        for (int index = 0; index < StepCount; index++)
             AccumulateRadial(index, uv, offsetStep, rate, color, alpha);
-            AccumulateRadial(index + 1, uv, offsetStep, rate, color, alpha);
-            AccumulateRadial(index + 2, uv, offsetStep, rate, color, alpha);
-            AccumulateRadial(index + 3, uv, offsetStep, rate, color, alpha);
-        }
     }
     else if (mode == ModeRotational)
     {
         float rate = shiftDistance / radius;
 
-        [loop]
-        for (int index = 0; index < steps; index += Unroll)
-        {
+        [unroll]
+        for (int index = 0; index < StepCount; index++)
             AccumulateRotational(index, uv, offset, pixelStep, rate, color, alpha);
-            AccumulateRotational(index + 1, uv, offset, pixelStep, rate, color, alpha);
-            AccumulateRotational(index + 2, uv, offset, pixelStep, rate, color, alpha);
-            AccumulateRotational(index + 3, uv, offset, pixelStep, rate, color, alpha);
-        }
     }
     else
     {
         float2 stride = shiftDistance * direction * pixelStep;
 
-        [loop]
-        for (int index = 0; index < steps; index += Unroll)
-        {
+        [unroll]
+        for (int index = 0; index < StepCount; index++)
             AccumulateLinear(index, uv, stride, color, alpha);
-            AccumulateLinear(index + 1, uv, stride, color, alpha);
-            AccumulateLinear(index + 2, uv, stride, color, alpha);
-            AccumulateLinear(index + 3, uv, stride, color, alpha);
-        }
     }
 
     return Resolve(color, alpha);

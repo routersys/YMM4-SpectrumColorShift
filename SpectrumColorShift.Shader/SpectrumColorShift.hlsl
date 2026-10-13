@@ -1,3 +1,7 @@
+#ifndef StepCount
+#error StepCount must be defined by the build.
+#endif
+
 Texture2D SourceTexture : register(t0);
 SamplerState SourceSampler : register(s0);
 
@@ -69,6 +73,29 @@ void Accumulate(float4 entry, float4 shifted, inout float3 color, inout float3 c
     coverage += entry.rgb * shifted.a;
 }
 
+void AccumulateRadial(int index, float2 uv, float2 offsetStep, float rate, inout float3 color, inout float3 coverage)
+{
+    float4 entry = samples[index];
+    float scale = clamp(entry.w * rate, -MaxRadialShift, MaxRadialShift);
+    Accumulate(entry, SourceTexture.SampleLevel(SourceSampler, uv - offsetStep * scale, 0), color, coverage);
+}
+
+void AccumulateRotational(int index, float2 uv, float2 offset, float2 pixelStep, float rate, inout float3 color, inout float3 coverage)
+{
+    float4 entry = samples[index];
+    float sine;
+    float cosine;
+    sincos(entry.w * rate, sine, cosine);
+    float2 delta = float2((cosine - 1.0) * offset.x + sine * offset.y, (cosine - 1.0) * offset.y - sine * offset.x);
+    Accumulate(entry, SourceTexture.SampleLevel(SourceSampler, uv + delta * pixelStep, 0), color, coverage);
+}
+
+void AccumulateLinear(int index, float2 uv, float2 stride, inout float3 color, inout float3 coverage)
+{
+    float4 entry = samples[index];
+    Accumulate(entry, SourceTexture.SampleLevel(SourceSampler, uv - entry.w * stride, 0), color, coverage);
+}
+
 float4 Resolve(float3 color, float3 coverage)
 {
     float alpha = max(coverage.r, max(coverage.g, coverage.b));
@@ -102,39 +129,25 @@ float4 GatherInside(float2 uv, float2 pixelStep, float2 scenePosition)
         float2 offsetStep = offset * pixelStep;
         float rate = shiftDistance / radius;
 
-        [loop]
-        for (int index = 0; index < steps; index++)
-        {
-            float4 entry = samples[index];
-            float scale = clamp(entry.w * rate, -MaxRadialShift, MaxRadialShift);
-            Accumulate(entry, SourceTexture.SampleLevel(SourceSampler, uv - offsetStep * scale, 0), color, coverage);
-        }
+        [unroll]
+        for (int index = 0; index < StepCount; index++)
+            AccumulateRadial(index, uv, offsetStep, rate, color, coverage);
     }
     else if (mode == ModeRotational)
     {
         float rate = shiftDistance / radius;
 
-        [loop]
-        for (int index = 0; index < steps; index++)
-        {
-            float4 entry = samples[index];
-            float sine;
-            float cosine;
-            sincos(entry.w * rate, sine, cosine);
-            float2 delta = float2((cosine - 1.0) * offset.x + sine * offset.y, (cosine - 1.0) * offset.y - sine * offset.x);
-            Accumulate(entry, SourceTexture.SampleLevel(SourceSampler, uv + delta * pixelStep, 0), color, coverage);
-        }
+        [unroll]
+        for (int index = 0; index < StepCount; index++)
+            AccumulateRotational(index, uv, offset, pixelStep, rate, color, coverage);
     }
     else
     {
         float2 stride = shiftDistance * direction * pixelStep;
 
-        [loop]
-        for (int index = 0; index < steps; index++)
-        {
-            float4 entry = samples[index];
-            Accumulate(entry, SourceTexture.SampleLevel(SourceSampler, uv - entry.w * stride, 0), color, coverage);
-        }
+        [unroll]
+        for (int index = 0; index < StepCount; index++)
+            AccumulateLinear(index, uv, stride, color, coverage);
     }
 
     return Resolve(color, coverage);

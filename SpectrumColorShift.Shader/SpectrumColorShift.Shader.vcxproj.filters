@@ -15,17 +15,17 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="SpectrumColorShift.hlsl">
-      <Filter>ソース ファイル</Filter>
-    </FxCompile>
-    <FxCompile Include="SpectrumColorShiftPhysical.hlsl">
-      <Filter>ソース ファイル</Filter>
-    </FxCompile>
     <FxCompile Include="SpectrumColorShiftLinearize.hlsl">
       <Filter>ソース ファイル</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="SpectrumColorShift.hlsl">
+      <Filter>ソース ファイル</Filter>
+    </None>
+    <None Include="SpectrumColorShiftPhysical.hlsl">
+      <Filter>ソース ファイル</Filter>
+    </None>
     <None Include="Srgb.hlsli">
       <Filter>ヘッダー ファイル</Filter>
     </None>

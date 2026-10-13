@@ -71,10 +71,6 @@ internal sealed class SpectrumColorShiftCustomEffect : D2D1CustomShaderEffectBas
     [CustomEffect(2)]
     internal sealed class EffectImpl : D2D1CustomShaderEffectImplBase<EffectImpl>
     {
-        private const string PhysicalShaderName = "SpectrumColorShiftPhysical";
-
-        private static readonly Guid PhysicalShaderId = Guid.NewGuid();
-
         private ConstantBuffer _cb;
         private PhysicalConstantBuffer _physicalCb;
         private ShiftMode _mode = ShiftMode.Linear;
@@ -85,7 +81,7 @@ internal sealed class SpectrumColorShiftCustomEffect : D2D1CustomShaderEffectBas
         private bool _tableStale = true;
         private bool _spectralStale = true;
         private bool _physical;
-        private bool _physicalShaderApplied;
+        private Guid _shader = GUID_PixelShader;
 
         [CustomEffectProperty(PropertyType.Float, (int)PropertyIndex.Distance)]
         public float Distance
@@ -208,7 +204,7 @@ internal sealed class SpectrumColorShiftCustomEffect : D2D1CustomShaderEffectBas
             }
         }
 
-        public EffectImpl() : base(ShaderResourceUri.Get("SpectrumColorShift"))
+        public EffectImpl() : base(StepShaders.DefaultBytes)
         {
             _cb.Direction = Vector2.UnitX;
             _cb.Radius = 1f;
@@ -220,9 +216,7 @@ internal sealed class SpectrumColorShiftCustomEffect : D2D1CustomShaderEffectBas
         public override void Initialize(ID2D1EffectContext effectContext, ID2D1TransformGraph transformGraph)
         {
             base.Initialize(effectContext, transformGraph);
-
-            var bytes = PackResourceReader.ReadAllBytes(ShaderResourceUri.Get(PhysicalShaderName));
-            effectContext.LoadPixelShader(PhysicalShaderId, bytes, bytes.Length);
+            StepShaders.Load(effectContext);
         }
 
         protected override void UpdateConstants()
@@ -234,10 +228,11 @@ internal sealed class SpectrumColorShiftCustomEffect : D2D1CustomShaderEffectBas
             {
                 _cb.SpreadScale = ShiftGeometry.Spread(_mode, _cb.Distance, _cb.Radius);
 
-                if (_physical != _physicalShaderApplied)
+                var shader = StepShaders.Select(_physical, _steps);
+                if (shader != _shader)
                 {
-                    drawInformation.SetPixelShader(_physical ? PhysicalShaderId : GUID_PixelShader, PixelOptions.None);
-                    _physicalShaderApplied = _physical;
+                    drawInformation.SetPixelShader(shader, PixelOptions.None);
+                    _shader = shader;
                 }
 
                 if (_physical)

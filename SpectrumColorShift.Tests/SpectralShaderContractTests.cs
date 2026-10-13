@@ -58,7 +58,6 @@ public sealed partial class SpectralShaderContractTests
     {
         Assert.Equal(Spectrum.MaxSteps, Constant("MaxSteps"));
         Assert.Equal(Spectrum.SpectralTableLength, Constant("TableSize"));
-        Assert.Equal(Spectrum.Unroll, Constant("Unroll"));
         Assert.Equal((int)ShiftMode.Radial, Constant("ModeRadial"));
         Assert.Equal((int)ShiftMode.Rotational, Constant("ModeRotational"));
         Assert.Equal(ShiftGeometry.MaxRadialShift, Constant("MaxRadialShift"));

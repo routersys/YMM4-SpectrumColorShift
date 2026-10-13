@@ -61,9 +61,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Resource Include="$(ShaderDirPath)SpectrumColorShift.cso" Link="Resources\Shader\SpectrumColorShift.cso" />
-		<Resource Include="$(ShaderDirPath)SpectrumColorShiftPhysical.cso" Link="Resources\Shader\SpectrumColorShiftPhysical.cso" />
-		<Resource Include="$(ShaderDirPath)SpectrumColorShiftLinearize.cso" Link="Resources\Shader\SpectrumColorShiftLinearize.cso" />
+		<Resource Include="$(ShaderDirPath)SpectrumColorShift*.cso" Link="Resources\Shader\%(Filename)%(Extension)" />
 	</ItemGroup>
 
 	<ItemGroup>

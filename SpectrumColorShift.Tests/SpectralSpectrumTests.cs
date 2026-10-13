@@ -335,10 +335,10 @@ public sealed class SpectralSpectrumTests
     [InlineData(33, 36)]
     [InlineData(61, 64)]
     [InlineData(int.MaxValue, 64)]
-    public void ThePaddedStepsFillWholeUnrolledIterations(int requested, int expected)
+    public void ThePaddedStepsAreWholeMultiplesOfTheStepQuantum(int requested, int expected)
     {
         Assert.Equal(expected, Spectrum.Padded(requested));
-        Assert.Equal(0, Spectrum.Padded(requested) % Spectrum.Unroll);
+        Assert.Equal(0, Spectrum.Padded(requested) % Spectrum.StepQuantum);
     }
 
     [Theory]
