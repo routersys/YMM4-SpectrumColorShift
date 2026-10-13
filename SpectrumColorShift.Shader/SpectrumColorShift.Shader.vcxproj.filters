@@ -26,6 +26,9 @@
     <None Include="SpectrumColorShiftPhysical.hlsl">
       <Filter>ソース ファイル</Filter>
     </None>
+    <None Include="Physical.hlsli">
+      <Filter>ヘッダー ファイル</Filter>
+    </None>
     <None Include="Srgb.hlsli">
       <Filter>ヘッダー ファイル</Filter>
     </None>

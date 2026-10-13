@@ -154,6 +154,7 @@
   <ItemGroup>
     <None Include="SpectrumColorShift.hlsl" />
     <None Include="SpectrumColorShiftPhysical.hlsl" />
+    <None Include="Physical.hlsli" />
     <None Include="Srgb.hlsli" />
   </ItemGroup>
   <ItemGroup>

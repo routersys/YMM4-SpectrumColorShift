@@ -24,7 +24,7 @@ public sealed partial class SpectralShaderContractTests
         ["samples"] = "Samples",
     };
 
-    static string Source { get; } = ShaderSource("SpectrumColorShiftPhysical.hlsl");
+    static string Source { get; } = ShaderSource("Physical.hlsli");
 
     static string SrgbSource { get; } = ShaderSource("Srgb.hlsli");
 
