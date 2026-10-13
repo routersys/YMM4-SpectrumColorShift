@@ -158,11 +158,12 @@
     <None Include="Physical.hlsli" />
     <None Include="Srgb.hlsli" />
   </ItemGroup>
-  <ItemGroup>
-    <StepCount Include="8;12;16;20;24;28;32;36;40;44;48;52;56;60;64" />
-    <TapCount Include="4;8;12;16;20;24;28;32;36;40;44" />
-  </ItemGroup>
-  <Target Name="AddStepCountShaders" BeforeTargets="FxCompile">
+  <Import Project="ShaderVariants.props" />
+  <Target Name="AddVariantShaders" BeforeTargets="FxCompile">
+    <ItemGroup>
+      <StaleShader Include="$(OutDir)SpectrumColorShift*.cso" />
+    </ItemGroup>
+    <Delete Files="@(StaleShader)" />
     <ItemGroup>
       <FxCompile Include="SpectrumColorShift.hlsl">
         <ShaderType>Pixel</ShaderType>

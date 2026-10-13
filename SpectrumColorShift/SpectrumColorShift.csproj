@@ -11,6 +11,8 @@
 		<ShaderDirPath>..\Release\</ShaderDirPath>
 	</PropertyGroup>
 
+	<Import Project="..\SpectrumColorShift.Shader\ShaderVariants.props" />
+
 	<ItemGroup>
 		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
 			<_Parameter1>SpectrumColorShift.Tests</_Parameter1>
@@ -61,7 +63,14 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Resource Include="$(ShaderDirPath)SpectrumColorShift*.cso" Link="Resources\Shader\%(Filename)%(Extension)" />
+		<Resource Include="$(ShaderDirPath)SpectrumColorShiftLinearize.cso" Link="Resources\Shader\%(Filename)%(Extension)" />
+		<Resource Include="@(StepCount->'$(ShaderDirPath)SpectrumColorShiftLinear%(Identity).cso')" Link="Resources\Shader\%(Filename)%(Extension)" />
+		<Resource Include="@(StepCount->'$(ShaderDirPath)SpectrumColorShiftRadial%(Identity).cso')" Link="Resources\Shader\%(Filename)%(Extension)" />
+		<Resource Include="@(StepCount->'$(ShaderDirPath)SpectrumColorShiftRotational%(Identity).cso')" Link="Resources\Shader\%(Filename)%(Extension)" />
+		<Resource Include="@(StepCount->'$(ShaderDirPath)SpectrumColorShiftPhysicalLinear%(Identity).cso')" Link="Resources\Shader\%(Filename)%(Extension)" />
+		<Resource Include="@(StepCount->'$(ShaderDirPath)SpectrumColorShiftPhysicalRadial%(Identity).cso')" Link="Resources\Shader\%(Filename)%(Extension)" />
+		<Resource Include="@(StepCount->'$(ShaderDirPath)SpectrumColorShiftPhysicalRotational%(Identity).cso')" Link="Resources\Shader\%(Filename)%(Extension)" />
+		<Resource Include="@(TapCount->'$(ShaderDirPath)SpectrumColorShiftPhysicalFilterLinear%(Identity).cso')" Link="Resources\Shader\%(Filename)%(Extension)" />
 	</ItemGroup>
 
 	<ItemGroup>

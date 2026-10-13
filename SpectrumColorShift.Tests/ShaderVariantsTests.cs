@@ -8,7 +8,11 @@ namespace SpectrumColorShift.Tests;
 
 public sealed partial class ShaderVariantsTests
 {
-    static string Project { get; } = File.ReadAllText(Path.Combine(Path.GetDirectoryName(Here())!, "..", "SpectrumColorShift.Shader", "SpectrumColorShift.Shader.vcxproj"));
+    static string Project { get; } = ShaderProjectFile("SpectrumColorShift.Shader.vcxproj");
+
+    static string Props { get; } = ShaderProjectFile("ShaderVariants.props");
+
+    static string ShaderProjectFile(string name) => File.ReadAllText(Path.Combine(Path.GetDirectoryName(Here())!, "..", "SpectrumColorShift.Shader", name));
 
     static string Here([CallerFilePath] string path = "") => path;
 
@@ -23,7 +27,7 @@ public sealed partial class ShaderVariantsTests
     [GeneratedRegex(@"ShaderMode=(?<value>\d+)</PreprocessorDefinitions>\s*<ObjectFileOutput>\$\(OutDir\)(?<prefix>SpectrumColorShiftPhysicalFilter|SpectrumColorShiftPhysical|SpectrumColorShift)(?<mode>[A-Za-z]+)%\((?<list>StepCount|TapCount)\.Identity\)\.cso")]
     private static partial Regex VariantPattern();
 
-    static IEnumerable<int> Listed(Regex pattern) => pattern.Match(Project).Groups["counts"].Value.Split(';').Select(count => int.Parse(count, CultureInfo.InvariantCulture));
+    static IEnumerable<int> Listed(Regex pattern) => pattern.Match(Props).Groups["counts"].Value.Split(';').Select(count => int.Parse(count, CultureInfo.InvariantCulture));
 
     [Fact]
     public void TheStepCountsCoverTheWholeRangeInWholeQuanta()
@@ -42,7 +46,7 @@ public sealed partial class ShaderVariantsTests
     }
 
     [Fact]
-    public void TheShaderProjectCompilesExactlyTheseCounts()
+    public void TheSharedPropsListExactlyTheseCounts()
     {
         Assert.Equal(ShaderVariants.Legacy.Counts, Listed(StepCountsPattern()));
         Assert.Equal(ShaderVariants.Filter.Counts, Listed(TapCountsPattern()));
