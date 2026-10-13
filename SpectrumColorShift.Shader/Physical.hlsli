@@ -7,7 +7,6 @@
 Texture2D LightTexture : register(t1);
 SamplerState LightSampler : register(s1);
 
-static const int MaxSteps = 64;
 static const int TableSize = 128;
 static const int FilterTableSize = 132;
 static const int ModeRadial = 2;

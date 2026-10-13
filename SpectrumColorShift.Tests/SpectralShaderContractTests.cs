@@ -52,7 +52,6 @@ public sealed partial class SpectralShaderContractTests
     [Fact]
     public void TheShaderAndTheEffectAgreeOnTheConstants()
     {
-        Assert.Equal(Spectrum.MaxSteps, Constant("MaxSteps"));
         Assert.Equal(Spectrum.SpectralTableLength, Constant("TableSize"));
         Assert.Equal(SpectralFilter.TableLength, Constant("FilterTableSize"));
         Assert.Equal((int)ShiftMode.Radial, Constant("ModeRadial"));
@@ -75,23 +74,23 @@ public sealed partial class SpectralShaderContractTests
     }
 
     [Theory]
-    [InlineData("DecodeThreshold", 0.04045f)]
-    [InlineData("EncodeThreshold", 0.0031308f)]
-    [InlineData("LowSlope", 12.92f)]
-    [InlineData("Offset", 0.055f)]
-    [InlineData("Scale", 1.055f)]
-    [InlineData("Exponent", 2.4f)]
+    [InlineData("SrgbDecodeThreshold", 0.04045f)]
+    [InlineData("SrgbEncodeThreshold", 0.0031308f)]
+    [InlineData("SrgbLowSlope", 12.92f)]
+    [InlineData("SrgbOffset", 0.055f)]
+    [InlineData("SrgbScale", 1.055f)]
+    [InlineData("SrgbExponent", 2.4f)]
     public void TheSrgbHeaderHoldsTheStandardTransferConstants(string name, float expected)
         => Assert.Equal(expected, Constant(SrgbSource, name));
 
     [Fact]
     public void TheSrgbCurvesMeetAtTheThresholds()
     {
-        var slope = Constant(SrgbSource, "LowSlope");
-        var linearEnd = Constant(SrgbSource, "EncodeThreshold");
-        var power = Constant(SrgbSource, "Scale") * MathF.Pow(linearEnd, 1f / Constant(SrgbSource, "Exponent")) - Constant(SrgbSource, "Offset");
+        var slope = Constant(SrgbSource, "SrgbLowSlope");
+        var linearEnd = Constant(SrgbSource, "SrgbEncodeThreshold");
+        var power = Constant(SrgbSource, "SrgbScale") * MathF.Pow(linearEnd, 1f / Constant(SrgbSource, "SrgbExponent")) - Constant(SrgbSource, "SrgbOffset");
 
-        Assert.Equal(Constant(SrgbSource, "DecodeThreshold"), slope * linearEnd, 1e-5f);
+        Assert.Equal(Constant(SrgbSource, "SrgbDecodeThreshold"), slope * linearEnd, 1e-5f);
         Assert.Equal(slope * linearEnd, power, 1e-5f);
     }
 
