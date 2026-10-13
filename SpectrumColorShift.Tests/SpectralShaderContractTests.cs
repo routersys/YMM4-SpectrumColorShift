@@ -33,14 +33,12 @@ public sealed partial class SpectralShaderContractTests
 
     static string Here([CallerFilePath] string path = "") => path;
 
-    static int LinearInput { get; } = (int)typeof(SpectrumColorShiftCustomEffect).GetField("LinearInput", BindingFlags.NonPublic | BindingFlags.Static)!.GetRawConstantValue()!;
-
     static Type ConstantBuffer => typeof(EffectImpl).GetNestedType("PhysicalConstantBuffer", BindingFlags.NonPublic)!;
 
     [GeneratedRegex(@"static const (?:int|float) (?<name>\w+) = (?<value>[0-9.]+);")]
     private static partial Regex ConstantPattern();
 
-    [GeneratedRegex(@"Texture2D\s+LinearTexture\s*:\s*register\(t(?<register>\d+)\)")]
+    [GeneratedRegex(@"Texture2D\s+LightTexture\s*:\s*register\(t(?<register>\d+)\)")]
     private static partial Regex TexturePattern();
 
     [GeneratedRegex(@"float4\s+\w+\s*:\s*TEXCOORD(?<index>\d+)")]
@@ -65,7 +63,7 @@ public sealed partial class SpectralShaderContractTests
     [Fact]
     public void TheShaderReadsTheTextureOfTheLinearizedInput()
     {
-        Assert.Equal(LinearInput, int.Parse(TexturePattern().Match(Source).Groups["register"].Value, CultureInfo.InvariantCulture));
+        Assert.Equal(SpectrumColorShiftCustomEffect.LightInput, int.Parse(TexturePattern().Match(Source).Groups["register"].Value, CultureInfo.InvariantCulture));
     }
 
     [Fact]
@@ -73,7 +71,7 @@ public sealed partial class SpectralShaderContractTests
     {
         var declared = CoordinatePattern().Matches(Source).Select(match => int.Parse(match.Groups["index"].Value, CultureInfo.InvariantCulture));
 
-        Assert.Equal(Enumerable.Range(0, LinearInput + 1), declared.Order());
+        Assert.Equal(Enumerable.Range(0, SpectrumColorShiftCustomEffect.LightInput + 1), declared.Order());
     }
 
     [Theory]

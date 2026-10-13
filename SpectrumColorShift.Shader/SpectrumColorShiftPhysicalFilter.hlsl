@@ -6,7 +6,7 @@
 
 void AccumulateTap(int tap, float2 position, inout float3 color, inout float alpha)
 {
-    float4 shifted = LinearTexture.SampleLevel(LinearSampler, position, 0);
+    float4 shifted = LightTexture.SampleLevel(LightSampler, position, 0);
     float4 red = taps[tap * 3];
     float4 green = taps[tap * 3 + 1];
     float4 blue = taps[tap * 3 + 2];

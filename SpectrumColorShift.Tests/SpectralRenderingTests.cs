@@ -48,7 +48,7 @@ public sealed class SpectralRenderingTests
     static Rendering Render(IGraphicsDevicesAndContext devices, SourceImage source, ShiftSettings settings)
     {
         using var effect = new SpectrumColorShiftCustomEffect(devices);
-        effect.SetInput(0, source.Bitmap, true);
+        effect.SetSource(source.Bitmap, true);
         settings.Apply(effect);
         using var output = effect.Output;
 
@@ -602,7 +602,7 @@ public sealed class SpectralRenderingTests
 
         var inPlace = Render(context, source, settings);
         using var effect = new SpectrumColorShiftCustomEffect(context);
-        effect.SetInput(0, movedOutput, true);
+        effect.SetSource(movedOutput, true);
         settings.Apply(effect);
         using var output = effect.Output;
         var travelled = Rendering.Capture(context, output);
@@ -698,7 +698,7 @@ public sealed class SpectralRenderingTests
         using var bitmap = context.DeviceContext.CreateBitmap(new SizeI(96, 96), nint.Zero, stride, new BitmapProperties1(SourceImage.PixelFormat, SourceImage.Dpi, SourceImage.Dpi, BitmapOptions.None));
         bitmap.CopyFromMemory(pixels, stride);
         using var effect = new SpectrumColorShiftCustomEffect(context);
-        effect.SetInput(0, bitmap, true);
+        effect.SetSource(bitmap, true);
         Settings(Mode: mode, Distance: 12f).Apply(effect);
         using var output = effect.Output;
 
@@ -735,7 +735,7 @@ public sealed class SpectralRenderingTests
         var expected = Render(context, source, legacy);
 
         using var effect = new SpectrumColorShiftCustomEffect(context);
-        effect.SetInput(0, source.Bitmap, true);
+        effect.SetSource(source.Bitmap, true);
         legacy.Apply(effect);
         effect.Physical = 1;
         using var output = effect.Output;

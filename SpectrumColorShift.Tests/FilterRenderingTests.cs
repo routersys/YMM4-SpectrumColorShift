@@ -35,7 +35,7 @@ public sealed class FilterRenderingTests
         using var context = devices.CreateContext();
         using var source = new SourceImage(context, 64, 40, Gradient);
         using var effect = new SpectrumColorShiftCustomEffect(context);
-        effect.SetInput(0, source.Bitmap, true);
+        effect.SetSource(source.Bitmap, true);
         using var output = effect.Output;
         var settings = new ShiftSettings(ShiftMode.Linear, distance, angle, default, 1f, law, 550f, steps, true);
         settings.Apply(effect);
@@ -60,7 +60,7 @@ public sealed class FilterRenderingTests
         using var context = devices.CreateContext();
         using var source = new SourceImage(context, 64, 40, Gradient);
         using var effect = new SpectrumColorShiftCustomEffect(context);
-        effect.SetInput(0, source.Bitmap, true);
+        effect.SetSource(source.Bitmap, true);
         using var output = effect.Output;
 
         foreach (var (angle, distance) in new[] { (0f, 8f), (30f, 8f), (0f, 8f), (0f, 40f), (90f, 8f), (0f, 0f), (0f, 8f) })

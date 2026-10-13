@@ -24,7 +24,7 @@ public sealed class StepCountRenderingTests
         using var context = devices.CreateContext();
         using var source = new SourceImage(context, 48, 32, Gradient);
         using var effect = new SpectrumColorShiftCustomEffect(context);
-        effect.SetInput(0, source.Bitmap, true);
+        effect.SetSource(source.Bitmap, true);
         using var output = effect.Output;
 
         foreach (var steps in Enumerable.Range(Spectrum.MinSteps, Spectrum.MaxSteps - Spectrum.MinSteps + 1))

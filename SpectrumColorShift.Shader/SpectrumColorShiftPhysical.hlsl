@@ -9,7 +9,7 @@ void AccumulateRadial(int index, float2 uv, float2 offsetStep, float rate, inout
     float4 gain = samples[index * 2];
     float4 basis = samples[index * 2 + 1];
     float scale = clamp(basis.w * rate, -MaxRadialShift, MaxRadialShift);
-    Accumulate(gain, basis.rgb, LinearTexture.SampleLevel(LinearSampler, uv - offsetStep * scale, 0), color, alpha);
+    Accumulate(gain, basis.rgb, LightTexture.SampleLevel(LightSampler, uv - offsetStep * scale, 0), color, alpha);
 }
 
 void AccumulateRotational(int index, float2 uv, float2 offset, float2 pixelStep, float rate, inout float3 color, inout float alpha)
@@ -20,14 +20,14 @@ void AccumulateRotational(int index, float2 uv, float2 offset, float2 pixelStep,
     float cosine;
     sincos(basis.w * rate, sine, cosine);
     float2 delta = float2((cosine - 1.0) * offset.x + sine * offset.y, (cosine - 1.0) * offset.y - sine * offset.x);
-    Accumulate(gain, basis.rgb, LinearTexture.SampleLevel(LinearSampler, uv + delta * pixelStep, 0), color, alpha);
+    Accumulate(gain, basis.rgb, LightTexture.SampleLevel(LightSampler, uv + delta * pixelStep, 0), color, alpha);
 }
 
 void AccumulateLinear(int index, float2 uv, float2 stride, inout float3 color, inout float alpha)
 {
     float4 gain = samples[index * 2];
     float4 basis = samples[index * 2 + 1];
-    Accumulate(gain, basis.rgb, LinearTexture.SampleLevel(LinearSampler, uv - basis.w * stride, 0), color, alpha);
+    Accumulate(gain, basis.rgb, LightTexture.SampleLevel(LightSampler, uv - basis.w * stride, 0), color, alpha);
 }
 
 float4 GatherInside(float2 uv, float2 pixelStep, float2 scenePosition)

@@ -228,7 +228,7 @@ public sealed class SpectrumColorShiftEffectProcessorTests
         using var processor = effect.CreateVideoEffect(context);
         processor.SetInput(source.Bitmap);
         using var direct = new SpectrumColorShiftCustomEffect(context);
-        direct.SetInput(0, source.Bitmap, true);
+        direct.SetSource(source.Bitmap, true);
         direct.Distance = 14.5f;
         direct.Mode = (int)ShiftMode.Rotational;
         direct.Angle = 33f;

@@ -10,14 +10,14 @@ public sealed class SpectrumColorShiftCustomEffectTests
 {
     const float MaxInputPixel = 4096f;
 
-    static float Read(SpectrumColorShiftCustomEffect effect, PropertyIndex index) => effect.GetFloatValue((int)index);
+    static float Read(SpectrumColorShiftCustomEffect effect, PropertyIndex index) => effect.ReadFloat(index);
 
-    static int ReadInt(SpectrumColorShiftCustomEffect effect, PropertyIndex index) => effect.GetIntValue((int)index);
+    static int ReadInt(SpectrumColorShiftCustomEffect effect, PropertyIndex index) => effect.ReadInt(index);
 
     static (float Left, float Top, float Right, float Bottom) Bounds(IGraphicsDevicesAndContext devices, SourceImage source, Action<SpectrumColorShiftCustomEffect> configure)
     {
         using var effect = new SpectrumColorShiftCustomEffect(devices);
-        effect.SetInput(0, source.Bitmap, true);
+        effect.SetSource(source.Bitmap, true);
         configure(effect);
         using var output = effect.Output;
         var bounds = devices.DeviceContext.GetImageLocalBounds(output);
@@ -318,7 +318,7 @@ public sealed class SpectrumColorShiftCustomEffectTests
         using var context = devices.CreateContext();
         using var source = SourceImage.Solid(context, 40, 30, Bgra.Opaque(10, 20, 30));
         using var effect = new SpectrumColorShiftCustomEffect(context);
-        effect.SetInput(0, source.Bitmap, true);
+        effect.SetSource(source.Bitmap, true);
         effect.Mode = (int)ShiftMode.Rotational;
         effect.Distance = MaxInputPixel;
         using var output = effect.Output;
@@ -388,7 +388,7 @@ public sealed class SpectrumColorShiftCustomEffectTests
         crop.SetInput(0, source.Bitmap, true);
         using var cropped = crop.Output;
         using var effect = new SpectrumColorShiftCustomEffect(context);
-        effect.SetInput(0, cropped, true);
+        effect.SetSource(cropped, true);
         effect.Mode = (int)mode;
         effect.Distance = 3f;
         using var output = effect.Output;

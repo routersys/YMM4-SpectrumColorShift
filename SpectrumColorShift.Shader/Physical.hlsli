@@ -4,8 +4,8 @@
 
 #include "Srgb.hlsli"
 
-Texture2D LinearTexture : register(t1);
-SamplerState LinearSampler : register(s1);
+Texture2D LightTexture : register(t1);
+SamplerState LightSampler : register(s1);
 
 static const int MaxSteps = 64;
 static const int TableSize = 128;
@@ -69,7 +69,7 @@ float4 SampleCovered(float2 uv, float2 pixelStep, float2 scenePosition, float2 t
     float2 minimum = inputBounds.xy + 0.5;
     float2 maximum = inputBounds.zw - 0.5;
     float2 clamped = clamp(target, minimum, maximum);
-    float4 color = LinearTexture.SampleLevel(LinearSampler, uv + (clamped - scenePosition) * pixelStep, 0);
+    float4 color = LightTexture.SampleLevel(LightSampler, uv + (clamped - scenePosition) * pixelStep, 0);
     float2 coverage = saturate(min(target - inputBounds.xy, inputBounds.zw - target) + 0.5);
     return color * (coverage.x * coverage.y);
 }

@@ -9,39 +9,40 @@ using YukkuriMovieMaker.Player.Video;
 
 namespace SpectrumColorShift;
 
-internal sealed class SpectrumColorShiftCustomEffect : D2D1CustomShaderEffectBase
+internal sealed class SpectrumColorShiftCustomEffect : IDisposable
 {
-    private const int SourceInput = 0;
-    private const int LinearInput = 1;
-    private const int EffectInputs = LinearInput + 1;
+    internal const int SourceInput = 0;
+    internal const int LightInput = 1;
+    private const int EffectInputs = LightInput + 1;
 
+    private readonly ShiftEffect _shift;
     private readonly LinearizeCustomEffect _linearized;
 
-    public SpectrumColorShiftCustomEffect(IGraphicsDevicesAndContext devices) : base(Create<EffectImpl>(devices))
+    public SpectrumColorShiftCustomEffect(IGraphicsDevicesAndContext devices)
     {
+        _shift = new ShiftEffect(devices);
         _linearized = new LinearizeCustomEffect(devices);
         if (!IsEnabled)
             return;
 
-        using var linearized = _linearized.Output;
-        base.SetInput(LinearInput, linearized, true);
+        using var light = _linearized.Output;
+        _shift.SetInput(LightInput, light, true);
     }
 
-    public new bool IsEnabled => base.IsEnabled && _linearized.IsEnabled;
+    public bool IsEnabled => _shift.IsEnabled && _linearized.IsEnabled;
 
-    public new void SetInput(int index, ID2D1Image? input, RawBool invalidate)
+    public ID2D1Image Output => _shift.Output;
+
+    public void SetSource(ID2D1Image? source, RawBool invalidate)
     {
-        base.SetInput(index, input, invalidate);
-        if (index == SourceInput)
-            _linearized.SetInput(SourceInput, input, invalidate);
+        _shift.SetInput(SourceInput, source, invalidate);
+        _linearized.SetInput(0, source, invalidate);
     }
 
-    protected override void DisposeCore(nint nativePointer, bool disposing)
+    public void Dispose()
     {
-        if (disposing)
-            _linearized.Dispose();
-
-        base.DisposeCore(nativePointer, disposing);
+        _linearized.Dispose();
+        _shift.Dispose();
     }
 
     internal enum PropertyIndex
@@ -58,16 +59,22 @@ internal sealed class SpectrumColorShiftCustomEffect : D2D1CustomShaderEffectBas
         Physical,
     }
 
-    public float Distance { set => SetValue((int)PropertyIndex.Distance, value); }
-    public int Mode { set => SetValue((int)PropertyIndex.Mode, value); }
-    public float Angle { set => SetValue((int)PropertyIndex.Angle, value); }
-    public float CenterX { set => SetValue((int)PropertyIndex.CenterX, value); }
-    public float CenterY { set => SetValue((int)PropertyIndex.CenterY, value); }
-    public float Strength { set => SetValue((int)PropertyIndex.Strength, value); }
-    public int Dispersion { set => SetValue((int)PropertyIndex.Dispersion, value); }
-    public float ReferenceWavelength { set => SetValue((int)PropertyIndex.ReferenceWavelength, value); }
-    public int Steps { set => SetValue((int)PropertyIndex.Steps, value); }
-    public int Physical { set => SetValue((int)PropertyIndex.Physical, value); }
+    public float Distance { set => _shift.SetValue((int)PropertyIndex.Distance, value); }
+    public int Mode { set => _shift.SetValue((int)PropertyIndex.Mode, value); }
+    public float Angle { set => _shift.SetValue((int)PropertyIndex.Angle, value); }
+    public float CenterX { set => _shift.SetValue((int)PropertyIndex.CenterX, value); }
+    public float CenterY { set => _shift.SetValue((int)PropertyIndex.CenterY, value); }
+    public float Strength { set => _shift.SetValue((int)PropertyIndex.Strength, value); }
+    public int Dispersion { set => _shift.SetValue((int)PropertyIndex.Dispersion, value); }
+    public float ReferenceWavelength { set => _shift.SetValue((int)PropertyIndex.ReferenceWavelength, value); }
+    public int Steps { set => _shift.SetValue((int)PropertyIndex.Steps, value); }
+    public int Physical { set => _shift.SetValue((int)PropertyIndex.Physical, value); }
+
+    internal float ReadFloat(PropertyIndex index) => _shift.GetFloatValue((int)index);
+
+    internal int ReadInt(PropertyIndex index) => _shift.GetIntValue((int)index);
+
+    private sealed class ShiftEffect(IGraphicsDevicesAndContext devices) : D2D1CustomShaderEffectBase(Create<EffectImpl>(devices));
 
     [CustomEffect(EffectInputs)]
     internal sealed class EffectImpl : D2D1CustomShaderEffectImplBase<EffectImpl>
@@ -323,7 +330,7 @@ internal sealed class SpectrumColorShiftCustomEffect : D2D1CustomShaderEffectBas
             var requested = inputRect.Right <= inputRect.Left || inputRect.Bottom <= inputRect.Top
                 ? inputRect
                 : ShiftGeometry.Input(outputRect, _mode, _header.Distance, _header.Direction, _header.Center, _header.Radius);
-            var activeInput = _physical ? LinearInput : SourceInput;
+            var activeInput = _physical ? LightInput : SourceInput;
 
             for (var index = 0; index < inputRects.Length; index++)
                 inputRects[index] = index == activeInput ? requested : default;

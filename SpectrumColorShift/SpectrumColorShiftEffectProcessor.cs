@@ -94,7 +94,7 @@ internal sealed class SpectrumColorShiftEffectProcessor(
 
     protected override void setInput(ID2D1Image? input)
     {
-        _effect?.SetInput(0, input, true);
+        _effect?.SetSource(input, true);
     }
 
     protected override void ClearEffectChain()
@@ -112,7 +112,7 @@ internal sealed class SpectrumColorShiftEffectProcessor(
 
     private void ClearEffectChainCore()
     {
-        _effect?.SetInput(0, null, true);
+        _effect?.SetSource(null, true);
         _isFirst = true;
     }
 
