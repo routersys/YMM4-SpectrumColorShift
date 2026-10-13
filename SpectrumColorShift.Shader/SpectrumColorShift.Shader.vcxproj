@@ -163,13 +163,33 @@
     <ItemGroup>
       <FxCompile Include="SpectrumColorShift.hlsl">
         <ShaderType>Pixel</ShaderType>
-        <PreprocessorDefinitions>StepCount=%(StepCount.Identity)</PreprocessorDefinitions>
-        <ObjectFileOutput>$(OutDir)SpectrumColorShift%(StepCount.Identity).cso</ObjectFileOutput>
+        <PreprocessorDefinitions>StepCount=%(StepCount.Identity);ShaderMode=1</PreprocessorDefinitions>
+        <ObjectFileOutput>$(OutDir)SpectrumColorShiftLinear%(StepCount.Identity).cso</ObjectFileOutput>
+      </FxCompile>
+      <FxCompile Include="SpectrumColorShift.hlsl">
+        <ShaderType>Pixel</ShaderType>
+        <PreprocessorDefinitions>StepCount=%(StepCount.Identity);ShaderMode=2</PreprocessorDefinitions>
+        <ObjectFileOutput>$(OutDir)SpectrumColorShiftRadial%(StepCount.Identity).cso</ObjectFileOutput>
+      </FxCompile>
+      <FxCompile Include="SpectrumColorShift.hlsl">
+        <ShaderType>Pixel</ShaderType>
+        <PreprocessorDefinitions>StepCount=%(StepCount.Identity);ShaderMode=4</PreprocessorDefinitions>
+        <ObjectFileOutput>$(OutDir)SpectrumColorShiftRotational%(StepCount.Identity).cso</ObjectFileOutput>
       </FxCompile>
       <FxCompile Include="SpectrumColorShiftPhysical.hlsl">
         <ShaderType>Pixel</ShaderType>
-        <PreprocessorDefinitions>StepCount=%(StepCount.Identity)</PreprocessorDefinitions>
-        <ObjectFileOutput>$(OutDir)SpectrumColorShiftPhysical%(StepCount.Identity).cso</ObjectFileOutput>
+        <PreprocessorDefinitions>StepCount=%(StepCount.Identity);ShaderMode=1</PreprocessorDefinitions>
+        <ObjectFileOutput>$(OutDir)SpectrumColorShiftPhysicalLinear%(StepCount.Identity).cso</ObjectFileOutput>
+      </FxCompile>
+      <FxCompile Include="SpectrumColorShiftPhysical.hlsl">
+        <ShaderType>Pixel</ShaderType>
+        <PreprocessorDefinitions>StepCount=%(StepCount.Identity);ShaderMode=2</PreprocessorDefinitions>
+        <ObjectFileOutput>$(OutDir)SpectrumColorShiftPhysicalRadial%(StepCount.Identity).cso</ObjectFileOutput>
+      </FxCompile>
+      <FxCompile Include="SpectrumColorShiftPhysical.hlsl">
+        <ShaderType>Pixel</ShaderType>
+        <PreprocessorDefinitions>StepCount=%(StepCount.Identity);ShaderMode=4</PreprocessorDefinitions>
+        <ObjectFileOutput>$(OutDir)SpectrumColorShiftPhysicalRotational%(StepCount.Identity).cso</ObjectFileOutput>
       </FxCompile>
     </ItemGroup>
   </Target>

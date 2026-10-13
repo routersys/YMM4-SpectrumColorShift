@@ -228,7 +228,7 @@ internal sealed class SpectrumColorShiftCustomEffect : D2D1CustomShaderEffectBas
             {
                 _cb.SpreadScale = ShiftGeometry.Spread(_mode, _cb.Distance, _cb.Radius);
 
-                var shader = StepShaders.Select(_physical, _steps);
+                var shader = StepShaders.Select(_physical, _mode, _steps);
                 if (shader != _shader)
                 {
                     drawInformation.SetPixelShader(shader, PixelOptions.None);

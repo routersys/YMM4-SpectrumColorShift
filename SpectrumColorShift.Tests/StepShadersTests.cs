@@ -2,6 +2,7 @@ using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using YukkuriMovieMaker.Commons;
 
 namespace SpectrumColorShift.Tests;
 
@@ -13,6 +14,9 @@ public sealed partial class StepShadersTests
 
     [GeneratedRegex(@"<StepCount Include=""(?<counts>[^""]+)""")]
     private static partial Regex CountsPattern();
+
+    [GeneratedRegex(@"ShaderMode=(?<value>\d+)</PreprocessorDefinitions>\s*<ObjectFileOutput>\$\(OutDir\)(?<prefix>SpectrumColorShift(?:Physical)?)(?<mode>[A-Za-z]+)%\(StepCount\.Identity\)\.cso")]
+    private static partial Regex VariantPattern();
 
     [Fact]
     public void TheCountsCoverTheWholeRangeInWholeQuanta()
@@ -31,11 +35,20 @@ public sealed partial class StepShadersTests
     }
 
     [Fact]
-    public void EveryCountHasItsOwnShaderInEachFamily()
+    public void TheShaderProjectCompilesEveryModeOfBothFamiliesWithItsEnumValue()
     {
-        var ids = StepShaders.Counts.SelectMany(count => new[] { StepShaders.Select(false, count), StepShaders.Select(true, count) }).ToList();
+        var compiled = VariantPattern().Matches(Project).Select(match => (match.Groups["prefix"].Value, match.Groups["mode"].Value, int.Parse(match.Groups["value"].Value, CultureInfo.InvariantCulture)));
+        var expected = from prefix in new[] { "SpectrumColorShift", "SpectrumColorShiftPhysical" } from mode in StepShaders.Modes select (prefix, mode.ToString(), (int)mode);
 
-        Assert.Equal(2 * StepShaders.Counts.Count(), ids.Distinct().Count());
+        Assert.Equal(expected.Order(), compiled.Order());
+    }
+
+    [Fact]
+    public void EveryModeAndCountHasItsOwnShaderInEachFamily()
+    {
+        var ids = (from physical in new[] { false, true } from mode in StepShaders.Modes from count in StepShaders.Counts select StepShaders.Select(physical, mode, count)).ToList();
+
+        Assert.Equal(2 * StepShaders.Modes.Count() * StepShaders.Counts.Count(), ids.Distinct().Count());
     }
 
     [Theory]
@@ -43,19 +56,25 @@ public sealed partial class StepShadersTests
     [InlineData(true)]
     public void StepsShareTheShaderOfTheirPaddedCount(bool physical)
     {
-        foreach (var steps in Enumerable.Range(Spectrum.MinSteps, Spectrum.MaxSteps - Spectrum.MinSteps + 1))
-            Assert.Equal(StepShaders.Select(physical, Spectrum.Padded(steps)), StepShaders.Select(physical, steps));
+        foreach (var mode in StepShaders.Modes)
+        {
+            foreach (var steps in Enumerable.Range(Spectrum.MinSteps, Spectrum.MaxSteps - Spectrum.MinSteps + 1))
+                Assert.Equal(StepShaders.Select(physical, mode, Spectrum.Padded(steps)), StepShaders.Select(physical, mode, steps));
+        }
     }
 
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void EveryCountIsShippedAsAResource(bool physical)
+    public void EveryVariantIsShippedAsAResource(bool physical)
     {
-        foreach (var count in StepShaders.Counts)
+        foreach (var mode in StepShaders.Modes)
         {
-            var bytes = YukkuriMovieMaker.Commons.PackResourceReader.ReadAllBytes(ShaderResourceUri.Get(StepShaders.ResourceName(physical, count)));
-            Assert.True(bytes.Length > 0, $"{StepShaders.ResourceName(physical, count)}");
+            foreach (var count in StepShaders.Counts)
+            {
+                var name = StepShaders.ResourceName(physical, mode, count);
+                Assert.True(PackResourceReader.ReadAllBytes(ShaderResourceUri.Get(name)).Length > 0, name);
+            }
         }
     }
 }

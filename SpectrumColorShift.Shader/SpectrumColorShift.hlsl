@@ -2,12 +2,17 @@
 #error StepCount must be defined by the build.
 #endif
 
+#ifndef ShaderMode
+#error ShaderMode must be defined by the build.
+#endif
+
 Texture2D SourceTexture : register(t0);
 SamplerState SourceSampler : register(s0);
 
 static const int MaxSteps = 64;
 static const int ModeRadial = 2;
 static const int ModeRotational = 4;
+static const int CompiledMode = ShaderMode;
 static const float MaxRadialShift = 0.5;
 static const float InteriorGuard = 0.51;
 
@@ -29,13 +34,13 @@ float2 SamplePosition(float2 scenePosition, float2 offset, float coefficient)
 {
     float shift = coefficient * shiftDistance;
 
-    if (mode == ModeRadial)
+    if (CompiledMode == ModeRadial)
     {
         float scale = 1.0 - clamp(shift / radius, -MaxRadialShift, MaxRadialShift);
         return center + offset * scale;
     }
 
-    if (mode == ModeRotational)
+    if (CompiledMode == ModeRotational)
     {
         float sine;
         float cosine;
@@ -48,10 +53,10 @@ float2 SamplePosition(float2 scenePosition, float2 offset, float coefficient)
 
 float2 Spread(float2 offset)
 {
-    if (mode == ModeRadial)
+    if (CompiledMode == ModeRadial)
         return abs(offset) * spreadScale;
 
-    if (mode == ModeRotational)
+    if (CompiledMode == ModeRotational)
         return length(offset) * spreadScale;
 
     return abs(shiftDistance) * abs(direction);
@@ -124,7 +129,7 @@ float4 GatherInside(float2 uv, float2 pixelStep, float2 scenePosition)
     float3 color = 0.0;
     float3 coverage = 0.0;
 
-    if (mode == ModeRadial)
+    if (CompiledMode == ModeRadial)
     {
         float2 offsetStep = offset * pixelStep;
         float rate = shiftDistance / radius;
@@ -133,7 +138,7 @@ float4 GatherInside(float2 uv, float2 pixelStep, float2 scenePosition)
         for (int index = 0; index < StepCount; index++)
             AccumulateRadial(index, uv, offsetStep, rate, color, coverage);
     }
-    else if (mode == ModeRotational)
+    else if (CompiledMode == ModeRotational)
     {
         float rate = shiftDistance / radius;
 
