@@ -46,7 +46,7 @@ public sealed class TextsTests
     {
         var neutral = Texts.ResourceManager.GetString(nameof(Texts.SpectrumColorShift), CultureInfo.InvariantCulture);
 
-        Assert.Equal("色ずれ（スペクトラム）", neutral);
+        Assert.Equal("色ズレ（スペクトラム）", neutral);
         Assert.Equal(neutral, Texts.ResourceManager.GetString(nameof(Texts.SpectrumColorShift), CultureInfo.GetCultureInfo("ja-JP")));
     }
 

@@ -69,8 +69,8 @@ jobs:
 
           $readmePath = ".github/Plugin_Readme.txt"
           $readme = Get-Content $readmePath -Raw
-          if (-not $readme.Contains(" 色ずれ（スペクトラム） for YMM4 $tag")) {
-            $current = if ($readme -match '(?m)^ 色ずれ（スペクトラム） for YMM4 (\S+)') { $Matches[1] } else { "記載なし" }
+          if (-not $readme.Contains(" 色ズレ（スペクトラム） for YMM4 $tag")) {
+            $current = if ($readme -match '(?m)^ 色ズレ（スペクトラム） for YMM4 (\S+)') { $Matches[1] } else { "記載なし" }
             $problems += "$readmePath の見出しが $current です。$tag にしてください。"
           }
 
@@ -133,7 +133,7 @@ jobs:
           Copy-Item ".github/Plugin_Readme.txt" "$stageRoot/Readme.txt"
 
           $readme = Get-Content "$stageRoot/Readme.txt" -Raw
-          if (-not $readme.Contains(" 色ずれ（スペクトラム） for YMM4 $version")) {
+          if (-not $readme.Contains(" 色ズレ（スペクトラム） for YMM4 $version")) {
             Write-Error "同梱する Readme.txt の見出しが $version と一致しません"
             exit 1
           }
