@@ -16,7 +16,7 @@ internal static class Spectrum
 
     public static int ClampSteps(int steps) => Math.Clamp(steps, MinSteps, MaxSteps);
 
-    public static int Padded(int steps) => (ClampSteps(steps) + StepQuantum - 1) / StepQuantum * StepQuantum;
+    public static int Padded(int steps) => Quantum.RoundUp(ClampSteps(steps), StepQuantum);
 
     public static float ClampReference(float wavelength)
         => float.IsNaN(wavelength) ? DefaultReferenceWavelength : Math.Clamp(wavelength, ShortestWavelength, LongestWavelength);
@@ -125,8 +125,7 @@ internal static class Spectrum
                 (float)(inverse[0] * x + inverse[1] * y + inverse[2] * z),
                 (float)(inverse[3] * x + inverse[4] * y + inverse[5] * z),
                 (float)(inverse[6] * x + inverse[7] * y + inverse[8] * z));
-            table[index * EntriesPerStep] = new Vector4(gain, (float)(y / luminance));
-            table[index * EntriesPerStep + 1] = new Vector4(basis, (float)(Displacement(law, wavelength, reference) / norm));
+            new SpectralStep(gain, (float)(y / luminance), basis, (float)(Displacement(law, wavelength, reference) / norm)).Write(table, index);
         }
 
         table[(steps * EntriesPerStep)..].Clear();

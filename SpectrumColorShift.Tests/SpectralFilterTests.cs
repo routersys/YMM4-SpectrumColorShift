@@ -201,7 +201,7 @@ public sealed class SpectralFilterTests
                 used++;
                 Assert.Equal(0, layout.Taps % SpectralFilter.TapQuantum);
                 Assert.InRange(layout.Taps, SpectralFilter.TapQuantum, SpectralFilter.MaxTaps);
-                Assert.True(layout.Taps * 20 <= Spectrum.Padded(steps) * 13, $"{layout.Taps} taps for {steps} steps at {distance}");
+                Assert.True(layout.Taps <= Spectrum.Padded(steps) * SpectralFilter.MaxTapShare, $"{layout.Taps} taps for {steps} steps at {distance}");
             }
         }
 
@@ -217,12 +217,5 @@ public sealed class SpectralFilterTests
         var layout = SpectralFilter.Fill(taps, Spectral(32, DispersionLaw.Grating), 32, 8f, Direction(0f));
 
         Assert.All(taps[(layout.Taps * SpectralFilter.EntriesPerTap)..], entry => Assert.Equal(Vector4.Zero, entry));
-    }
-
-    [Fact]
-    public void TheTapCountsRunFromOneQuantumToTheMaximum()
-    {
-        Assert.Equal(0, SpectralFilter.MaxTaps % SpectralFilter.TapQuantum);
-        Assert.Equal(Enumerable.Range(1, SpectralFilter.MaxTaps / SpectralFilter.TapQuantum).Select(index => index * SpectralFilter.TapQuantum), SpectralFilter.Counts);
     }
 }

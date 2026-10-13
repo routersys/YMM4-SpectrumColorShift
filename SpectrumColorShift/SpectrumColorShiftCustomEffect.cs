@@ -221,7 +221,7 @@ internal sealed class SpectrumColorShiftCustomEffect : D2D1CustomShaderEffectBas
             }
         }
 
-        public EffectImpl() : base(StepShaders.DefaultBytes)
+        public EffectImpl() : base(ShaderVariants.DefaultBytes)
         {
             _cb.Direction = Vector2.UnitX;
             _cb.Radius = 1f;
@@ -233,7 +233,7 @@ internal sealed class SpectrumColorShiftCustomEffect : D2D1CustomShaderEffectBas
         public override void Initialize(ID2D1EffectContext effectContext, ID2D1TransformGraph transformGraph)
         {
             base.Initialize(effectContext, transformGraph);
-            StepShaders.Load(effectContext);
+            ShaderVariants.LoadAll(effectContext);
         }
 
         protected override void UpdateConstants()
@@ -248,7 +248,7 @@ internal sealed class SpectrumColorShiftCustomEffect : D2D1CustomShaderEffectBas
                 if (_physical)
                     RefreshPhysical();
 
-                var shader = _physical && _filter.Taps > 0 ? StepShaders.SelectFilter(_filter.Taps) : StepShaders.Select(_physical, _mode, _steps);
+                var shader = _physical && _filter.Taps > 0 ? ShaderVariants.Filter.Id(ShiftMode.Linear, _filter.Taps) : ShaderVariants.Stepped(_physical).Id(_mode, _steps);
                 if (shader != _shader)
                 {
                     drawInformation.SetPixelShader(shader, PixelOptions.None);
